@@ -1,4 +1,4 @@
-# Financial News Starter Theme
+# Financial News Starter Theme Blank
 
 ## Credits
 - Font Awesome: https://fontawesome.com/v4.7/license/ (Font: SIL OFL 1.1, (S)CSS: MIT)

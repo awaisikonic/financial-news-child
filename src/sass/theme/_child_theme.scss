@@ -620,15 +620,6 @@ button {
     }
 }
 
-.input-group {
-    flex-wrap: nowrap;
-    .form-control {
-        &:focus {
-            box-shadow: none;
-        }
-    }
-}
-
 .market-ticker-slider-container {
     display: flex;
     border-left: 1px solid $dark-blue;
@@ -1481,4 +1472,13 @@ ul.pagination {
 
 a {
     color: $primary-blue;
+}
+
+.input-group {
+    flex-wrap: nowrap;
+    .form-control {
+        &:focus {
+            box-shadow: none;
+        }
+    }
 }

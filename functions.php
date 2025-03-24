@@ -39,6 +39,9 @@ function theme_enqueue_styles() {
 	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
 		wp_enqueue_script( 'comment-reply' );
 	}
+    wp_localize_script('child-understrap-scripts', 'ajax_object', array(
+        'ajaxurl' => admin_url('admin-ajax.php')
+    ));
 }
 add_action( 'wp_enqueue_scripts', 'theme_enqueue_styles' );
 
@@ -581,3 +584,87 @@ function fetch_latest_posts() {
 }
 add_action('wp_ajax_fetch_latest_posts', 'fetch_latest_posts');
 add_action('wp_ajax_nopriv_fetch_latest_posts', 'fetch_latest_posts');
+
+/**
+ * track Post Views
+ */
+function track_post_views($post_id) {
+    if (!is_single()) return;
+    
+    $views = get_post_meta($post_id, 'post_views_count', true);
+    $views = ($views == '') ? 1 : (int) $views + 1;
+    update_post_meta($post_id, 'post_views_count', $views);
+}
+add_action('wp_head', function() {
+    if (is_single()) track_post_views(get_the_ID());
+});
+
+/**
+ * Localize Ajax url
+ */
+function add_ajax_url_script() {
+    ?>
+    <script type="text/javascript">
+        var ajaxurl = "<?php echo admin_url('admin-ajax.php'); ?>";
+    </script>
+    <?php
+}
+add_action('wp_footer', 'add_ajax_url_script');
+
+/**
+ * Ajax handler to fecth Latest Posts by category Blog Page
+ */
+function fetch_latest_posts_blog() {
+    $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+
+    $args = [
+        'post_type'      => 'post',
+        'posts_per_page' => 6,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ];
+
+    if ($category_id) {
+        $args['cat'] = $category_id;
+    }
+
+    // Get total posts in this category
+    $count_args = $args;
+    $count_args['posts_per_page'] = -1; // Get all posts count
+    $total_query = new WP_Query($count_args);
+    $total_posts = $total_query->found_posts;
+
+    $query = new WP_Query($args);
+
+    ob_start();
+
+    if ($query->have_posts()) :
+        while ($query->have_posts()) : $query->the_post(); ?>
+            <div class="latest-post-news-card">
+                <div>
+                    <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
+                    <h5 class="entry-title"><a href="<?php the_permalink(); ?>" class="future-section__news-link"><?php the_title(); ?></a></h5>
+                </div>
+                <?php if (has_post_thumbnail()) : ?>
+                    <a href="<?php the_permalink(); ?>" class="future-section__news-link">
+                        <img src="<?php echo get_the_post_thumbnail_url(get_the_ID(), 'full'); ?>" 
+                            alt="<?php the_title_attribute(); ?>">
+                    </a>
+                <?php endif; ?>
+            </div>
+        <?php endwhile;
+    else :
+        echo '<p>No posts found.</p>';
+    endif;
+
+    $output = ob_get_clean();
+
+    wp_send_json([
+        'html' => $output,
+        'total_posts' => $total_posts,
+    ]);
+
+    wp_die();
+}
+add_action('wp_ajax_fetch_latest_posts_blog', 'fetch_latest_posts_blog');
+add_action('wp_ajax_nopriv_fetch_latest_posts_blog', 'fetch_latest_posts_blog');

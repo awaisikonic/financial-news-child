@@ -1,0 +1,187 @@
+// ====== Variables & Mixins ======
+
+$border-dark: 1px solid $dark-blue;
+$border-transparent: 1px solid rgba(98, 55, 255, 0.288);
+$transition-base: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+@mixin button-styles($size, $border-width, $color) {
+    width: $size;
+    height: $size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: $border-width solid $color;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.205);
+}
+
+@mixin hover-effect {
+    transition: $transition-base;
+
+    &:hover {
+        color: $minsk-blue;
+        transform: translateY(-5px);
+
+    }
+}
+
+@mixin image-hover {
+    transition: transform 0.4s ease-out;
+    will-change: transform;
+
+    &:hover {
+        transform: scale(1.02);
+    }
+}
+
+// ====== Main Structure ======
+.latest-post-main-wrapper {
+    border-left: $border-dark;
+    border-right: $border-dark;
+    border-bottom: $border-dark;
+}
+
+
+.latest-post{
+    &__featured-section {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 30px;
+
+        &__title {
+            font-size: 2.6rem;
+            padding: 20px 1.875rem;
+        }
+    }
+}
+
+
+
+
+.more-industrie-main {
+    border-top: $border-dark;
+    padding: 40px 30px;
+
+    .industrie-title {
+        color: $dark-blue;
+        font-size: 17px;
+    }
+
+    .latest-post-news-card {
+        display: grid;
+        grid-template-columns: 2.3fr auto;
+        margin-top: 30px;
+        gap: 20px;
+        border-bottom: 1px solid rgba(98, 55, 255, 0.288);
+        padding-bottom: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        width: 90%;
+        cursor: pointer;
+
+
+        &:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(98, 55, 255, 0.08);
+            border-bottom-color: rgba(98, 55, 255, 0.5);
+        }
+
+        div {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+            justify-content: space-between;
+
+            P {
+                font-size: 15px;
+                font-weight: 300;
+                white-space: nowrap;
+            }
+
+            h5 {
+                font-size: 22px;
+                font-weight: 500;
+                width: 100%;
+            }
+        }
+
+        img {
+            width: 200px;
+            height: auto;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        @media (max-width:762px) {
+            div {
+                display: flex;
+                gap: 10px;
+                justify-content: start;
+                flex-direction: column;
+            }
+
+            .latest-post-news-cards {
+                width: 100%;
+            }
+        }
+
+        @media (max-width:562px) {
+            div {
+                h5 {
+                    font-size: 16px;
+                }
+            }
+
+            img {
+                width: 120px;
+            }
+        }
+    }
+
+    @media (max-width:762px) {
+        .latest-post-news-cards {
+            width: 100%;
+        }
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .industrie-news-load-more-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 30px;
+
+        button {
+            text-align: center;
+            background-color: transparent;
+            border: 1px solid $dark-blue;
+            padding: 14px 25px;
+            border-radius: 5px;
+            font-weight: 600;
+            color: $dark-blue;
+            transition: all 0.2s ease-in;
+
+            &:hover {
+                background: $dark-blue;
+                color: white;
+                cursor: pointer;
+                transform: scale(1.1);
+            }
+        }
+    }
+}
+
+
+
+@media (max-width:762px) {
+    .sub-category-more-industrie-section {
+        .more-industrie-main {
+            padding: 20px 10px;
+        }
+    }
+}

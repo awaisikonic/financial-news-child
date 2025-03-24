@@ -26,10 +26,7 @@ defined( 'ABSPATH' ) || exit;
 	?>
 		<div class="upper-header-right">
 			<div class="header-search-bar">
-				<input type="text">
-				<button class="header-input-search-btn">
-					<i class="fa-solid fa-magnifying-glass"></i>
-				</button>
+				<?php get_search_form(); ?>
 			</div>
 		</div>
 	</div>

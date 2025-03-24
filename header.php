@@ -73,4 +73,13 @@ $navbar_type       = get_theme_mod( 'understrap_navbar_type', 'collapse' );
 			</div>
 		</div>
 	</div>
-    <main class="container">
+	<?php
+	$container_class = 'container'; // Default class
+
+	if (is_single() || is_page()) {
+		$container_class .= ' main-article'; // Add class for single posts
+	} elseif (is_home() || is_archive()) {
+		$container_class .= ' latest-post'; // Add class for blog/archive pages
+	}
+	?>
+    <main class="<?php echo $container_class;?>">

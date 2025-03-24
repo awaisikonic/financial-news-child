@@ -2,7 +2,7 @@
 /**
  * Template Name: Home Page
  *
- * @package Ikonic Dev
+ * @package Dev
  */
 get_header();
 ?>

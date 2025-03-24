@@ -206,4 +206,44 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(error => console.error("Error fetching posts:", error));
     }
 });
-console.log('sadsadsadsadsadsa');
+
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleDropdown = document.getElementById('toggleDropdownblog');
+    const categoryItems = document.querySelectorAll(".latest-post__featured-section .future-section__latest-header-catg-item");
+    const latestNewsContainer = document.getElementById("more-industrie-main");
+    const paginationContainer = document.querySelector(".pagination"); // Select pagination
+
+    toggleDropdown.addEventListener('click', () => {
+        document.querySelector('.latest-post__featured-section .future-section__latest-header-catg-list').classList.toggle('active');
+    });
+
+    categoryItems.forEach(item => {
+        item.addEventListener("click", function () {
+            const categoryId = this.getAttribute("data-cat");
+            fetchLatestPosts(categoryId);
+        });
+    });
+
+    function fetchLatestPosts(categoryId) {
+        const data = new FormData();
+        data.append("action", "fetch_latest_posts_blog");
+        data.append("category_id", categoryId);
+
+        fetch(ajaxurl, {
+            method: "POST",
+            body: data
+        })
+        .then(response => response.json())
+        .then(response => {
+            latestNewsContainer.innerHTML = response.html;
+
+            // Hide pagination if posts are fewer than 10
+            if (response.total_posts <= 10) {
+                paginationContainer.style.display = "none";
+            } else {
+                paginationContainer.style.display = "flex";
+            }
+        })
+        .catch(error => console.error("Error fetching posts:", error));
+    }
+});

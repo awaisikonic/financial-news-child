@@ -21,90 +21,6 @@ dropdownMenu.addEventListener('mouseout', () => {
 })
 
 document.addEventListener("DOMContentLoaded", function () {
-    const dropdownToggle = document.querySelector(".mobile-nav-menu-item-dropdwon");
-    const dropdownMenu = document.querySelector(".mobile-dropdown-menu");
-    const dropdownIcon = dropdownToggle.querySelector("i");
-
-    // Toggle Dropdown Menu & Icon
-    dropdownToggle.addEventListener("click", function (event) {
-        event.preventDefault();
-
-        // Toggle dropdown
-        const isOpen = dropdownMenu.style.display === "block";
-        dropdownMenu.style.display = isOpen ? "none" : "block";
-
-        // Toggle icon
-        dropdownIcon.classList.toggle("fa-chevron-down", isOpen);
-        dropdownIcon.classList.toggle("fa-chevron-up", !isOpen);
-    });
-
-    // Tabs Functionality
-    const tabButtons = document.querySelectorAll(".tab-btn");
-    const tabContents = document.querySelectorAll(".tab-content");
-
-    // Default: Hide all tabs
-    tabContents.forEach((content) => {
-        content.style.display = "none";
-    });
-
-    tabContents.forEach((content) => content.style.display = "none");
-
-    tabButtons.forEach((btn) => {
-        const icon = document.createElement("i"); // Add icon dynamically
-        icon.classList.add("fa-solid", "fa-chevron-down"); // Default icon
-        btn.appendChild(icon);
-
-        btn.addEventListener("click", function () {
-            // Remove active class & reset icons
-            tabButtons.forEach((b) => {
-                b.classList.remove("active");
-                b.querySelector("i").classList.remove("fa-chevron-up");
-                b.querySelector("i").classList.add("fa-chevron-down");
-            });
-
-            // Activate clicked tab
-            this.classList.add("active");
-            this.querySelector("i").classList.toggle("fa-chevron-down");
-            this.querySelector("i").classList.toggle("fa-chevron-up");
-
-            // Hide all content, show selected
-            tabContents.forEach((content) => content.style.display = "none");
-            document.getElementById(this.dataset.tab).style.display = "flex";
-        });
-    });
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    const cards = document.querySelectorAll('.industrie-news-card');
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    let visibleCards = 3; // Number of initially visible cards
-    const incrementAmount = 3; // Cards to show on each click
-
-    // Hide all cards except first 3
-    cards.forEach((card, index) => {
-        if (index >= visibleCards) card.classList.add('hidden');
-    });
-
-    loadMoreBtn.addEventListener('click', () => {
-        // Show next set of cards
-        visibleCards += incrementAmount;
-        cards.forEach((card, index) => {
-            if (index < visibleCards) card.classList.remove('hidden');
-        });
-
-        // Hide button when all cards are visible
-        if (visibleCards >= cards.length) {
-            loadMoreBtn.classList.add('hidden');
-        }
-    });
-
-    // Initial button visibility check
-    if (cards.length <= visibleCards) {
-        loadMoreBtn.classList.add('hidden');
-    }
-});
-
-document.addEventListener("DOMContentLoaded", function () {
     let marketWrapper = document.getElementById("marketDataWrapper");
     const prevBtn = document.getElementById("marketSlidePrev");
     const nextBtn = document.getElementById("marketSlideNext");
@@ -118,18 +34,20 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
             const data = await response.json();
+            if (data){
+                if (data.success && data.data && data.data.html) {
+                    if(marketWrapper){
+                        marketWrapper.innerHTML = data.data.html;
 
-            if (data.success && data.data && data.data.html) {
-                marketWrapper.innerHTML = data.data.html;
-
-                // Reassign marketWrapper after update
-                marketWrapper = document.getElementById("marketDataWrapper");
-
-                // Reattach scroll events
-                attachScrollEvents();
-            } else {
-                console.error("Unexpected response structure:", data);
-                marketWrapper.innerHTML = '<p class="error">No data available</p>';
+                        // Reassign marketWrapper after update
+                        marketWrapper = document.getElementById("marketDataWrapper");
+                    }
+                    // Reattach scroll events
+                    attachScrollEvents();
+                } else {
+                    console.error("Unexpected response structure:", data);
+                    marketWrapper.innerHTML = '<p class="error">No data available</p>';
+                }
             }
         } catch (error) {
             console.error("AJAX request failed:", error);
@@ -177,19 +95,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const toggleDropdown = document.getElementById('toggleDropdown');
     const categoryItems = document.querySelectorAll(".future-section__latest-header-catg-item");
     const latestNewsContainer = document.getElementById("latest-news-container");
-
-    toggleDropdown.addEventListener('click', () => {
-        document.querySelector('.future-section__latest-header-catg-list').classList.toggle('active');
-    });
-    
-    categoryItems.forEach(item => {
-        item.addEventListener("click", function () {
-            const categoryId = this.getAttribute("data-cat");
-
-            fetchLatestPosts(categoryId);
+    if(toggleDropdown){
+        toggleDropdown.addEventListener('click', () => {
+            document.querySelector('.future-section__latest-header-catg-list').classList.toggle('active');
         });
-    });
+    }
 
+    if(categoryItems){
+        categoryItems.forEach(item => {
+            item.addEventListener("click", function () {
+                const categoryId = this.getAttribute("data-cat");
+
+                fetchLatestPosts(categoryId);
+            });
+        });
+    }
     function fetchLatestPosts(categoryId) {
         const data = new FormData();
         data.append("action", "fetch_latest_posts");
@@ -245,5 +165,66 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         })
         .catch(error => console.error("Error fetching posts:", error));
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    const newsContainer = document.getElementById("industrie-news-container");
+    let displayedPosts = [];
+    // Select all the .industrie-news-card elements
+    const newsCard = document.querySelectorAll('.industrie-news-card');
+    const articleItem = document.querySelectorAll('.bb-article-item');
+    // Iterate over each card
+    articleItem.forEach(function( article) {
+        // Get the post ID from the data-post-id attribute
+        const postId =  article.getAttribute('data-post-id');
+        
+        // If the post ID exists, add it to the displayedPosts array
+        if (postId) {
+            displayedPosts.push(postId);
+        }
+    });
+    // Iterate over each card
+    newsCard.forEach(function(news) {
+        // Get the post ID from the data-post-id attribute
+        const postId = news.getAttribute('data-post-id');
+        
+        // If the post ID exists, add it to the displayedPosts array
+        if (postId) {
+            displayedPosts.push(postId);
+        }
+    });
+
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener("click", function () {
+            let offset = parseInt(loadMoreBtn.getAttribute("data-offset"));
+            let categoryId = loadMoreBtn.getAttribute("data-category-id");
+
+            loadMoreBtn.textContent = "Loading...";
+            loadMoreBtn.disabled = true;
+
+            fetch(ajaxurl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `action=load_more_parent_cat_news&offset=${offset}&category_id=${categoryId}&displayed_posts=${displayedPosts}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data.trim() === "no_more_posts") {
+                    loadMoreBtn.style.display = "none";
+                } else {
+                    newsContainer.insertAdjacentHTML("beforeend", data);
+                    loadMoreBtn.setAttribute("data-offset", offset + 6);
+                    loadMoreBtn.textContent = "Load More";
+                    loadMoreBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error("Error loading more posts:", error);
+                loadMoreBtn.textContent = "Load More";
+                loadMoreBtn.disabled = false;
+            });
+        });
     }
 });

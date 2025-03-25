@@ -668,3 +668,64 @@ function fetch_latest_posts_blog() {
 }
 add_action('wp_ajax_fetch_latest_posts_blog', 'fetch_latest_posts_blog');
 add_action('wp_ajax_nopriv_fetch_latest_posts_blog', 'fetch_latest_posts_blog');
+
+/**
+ * Ajax handler to fecth Latest Posts on Parent category page
+ */
+
+function load_more_parent_cat_news() {
+    $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
+    $posts_per_page = 6;
+    $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+    // Ensure 'displayed_posts' is set and not empty
+    if (isset($_POST['displayed_posts']) && !empty($_POST['displayed_posts'])) {
+        // Convert the comma-separated string to an array
+        $displayed_posts = explode(',', $_POST['displayed_posts']);
+        
+        // Use array_map to ensure all values are integers
+        $excluded_posts = array_map('intval', $displayed_posts);
+    } else {
+        $excluded_posts = [];
+    }
+
+    if ($category_id == 0) {
+        echo 'no_more_posts';
+        die();
+    }
+
+    $category_ids = get_term_children($category_id, 'category');
+    $category_ids[] = $category_id;
+
+    if (empty($category_ids)) {
+        echo 'no_more_posts';
+        die();
+    }
+    $more_news_query = new WP_Query([
+        'category__in' => $category_ids,
+        'posts_per_page' => $posts_per_page,
+        'offset' => $offset,
+        'post_status' => 'publish',
+        'post__not_in' => $excluded_posts,
+    ]);
+
+    if ($more_news_query->have_posts()):
+        while ($more_news_query->have_posts()): $more_news_query->the_post(); ?>
+            <div class="industrie-news-card">
+                <div>
+                    <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
+                    <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h5>
+                </div>
+                <?php if (has_post_thumbnail()): ?>
+                    <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
+                <?php endif; ?>
+            </div>
+        <?php endwhile;
+        wp_reset_postdata();
+    else:
+        echo 'no_more_posts';
+    endif;
+
+    die();
+}
+add_action('wp_ajax_load_more_parent_cat_news', 'load_more_parent_cat_news');
+add_action('wp_ajax_nopriv_load_more_parent_cat_news', 'load_more_parent_cat_news');

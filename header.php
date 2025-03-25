@@ -74,12 +74,20 @@ $navbar_type       = get_theme_mod( 'understrap_navbar_type', 'collapse' );
 		</div>
 	</div>
 	<?php
-	$container_class = 'container'; // Default class
+	$container_class = 'container';
 
 	if (is_single() || is_page()) {
-		$container_class .= ' main-article'; // Add class for single posts
+		$container_class .= ' main-article';
 	} elseif (is_home() || is_archive()) {
-		$container_class .= ' latest-post'; // Add class for blog/archive pages
+		$container_class .= ' latest-post';
+	} elseif (is_category()) {
+		$category = get_queried_object();
+		$parent_id = $category->parent;
+		if ($parent_id == 0) {
+			$container_class .= ' bb-category-main';
+		} else {
+			$container_class .= ' category-main';
+		}
 	}
 	?>
     <main class="<?php echo $container_class;?>">

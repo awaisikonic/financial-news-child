@@ -48,7 +48,6 @@ $transition-base: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     &__title {
         font-size: 2.6rem;
         padding: 20px 1.875rem;
-        border-bottom: $border-dark;
     }
 
     &__cta-link {
@@ -128,7 +127,7 @@ $transition-base: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         padding-bottom: 20px;
         transition: all 0.3s ease;
         position: relative;
-        width: 90%;
+        width: 100%;
         cursor: pointer;
 
 
@@ -153,7 +152,8 @@ $transition-base: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             h5 {
                 font-size: 22px;
                 font-weight: 500;
-                max-width: 450px;
+                max-width: 90%;
+                width: 100%;
             }
         }
 

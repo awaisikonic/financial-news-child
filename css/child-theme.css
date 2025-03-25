@@ -15470,47 +15470,6 @@ button {
   color: #D92332;
 }
 
-.input-group {
-  flex-wrap: nowrap;
-}
-.input-group .form-control:focus, .input-group .wpcf7 .wpcf7-validation-errors:focus, .wpcf7 .input-group .wpcf7-validation-errors:focus, .input-group .wpcf7 input[type=text]:focus, .wpcf7 .input-group input[type=text]:focus,
-.input-group .wpcf7 input[type=search]:focus,
-.wpcf7 .input-group input[type=search]:focus,
-.input-group .wpcf7 input[type=url]:focus,
-.wpcf7 .input-group input[type=url]:focus,
-.input-group .wpcf7 input[type=tel]:focus,
-.wpcf7 .input-group input[type=tel]:focus,
-.input-group .wpcf7 input[type=number]:focus,
-.wpcf7 .input-group input[type=number]:focus,
-.input-group .wpcf7 input[type=range]:focus,
-.wpcf7 .input-group input[type=range]:focus,
-.input-group .wpcf7 input[type=date]:focus,
-.wpcf7 .input-group input[type=date]:focus,
-.input-group .wpcf7 input[type=month]:focus,
-.wpcf7 .input-group input[type=month]:focus,
-.input-group .wpcf7 input[type=week]:focus,
-.wpcf7 .input-group input[type=week]:focus,
-.input-group .wpcf7 input[type=time]:focus,
-.wpcf7 .input-group input[type=time]:focus,
-.input-group .wpcf7 input[type=datetime]:focus,
-.wpcf7 .input-group input[type=datetime]:focus,
-.input-group .wpcf7 input[type=datetime-local]:focus,
-.wpcf7 .input-group input[type=datetime-local]:focus,
-.input-group .wpcf7 input[type=color]:focus,
-.wpcf7 .input-group input[type=color]:focus,
-.input-group .wpcf7 input[type=email]:focus,
-.wpcf7 .input-group input[type=email]:focus,
-.input-group .wpcf7 input[type=file]:focus,
-.wpcf7 .input-group input[type=file]:focus,
-.input-group .wpcf7 input[type=submit]:focus,
-.wpcf7 .input-group input[type=submit]:focus,
-.input-group .wpcf7 select:focus,
-.wpcf7 .input-group select:focus,
-.input-group .wpcf7 textarea:focus,
-.wpcf7 .input-group textarea:focus {
-  box-shadow: none;
-}
-
 .market-ticker-slider-container {
   display: flex;
   border-left: 1px solid #1A1440;
@@ -16236,6 +16195,47 @@ a {
   color: #4147BF;
 }
 
+.input-group {
+  flex-wrap: nowrap;
+}
+.input-group .form-control:focus, .input-group .wpcf7 .wpcf7-validation-errors:focus, .wpcf7 .input-group .wpcf7-validation-errors:focus, .input-group .wpcf7 input[type=text]:focus, .wpcf7 .input-group input[type=text]:focus,
+.input-group .wpcf7 input[type=search]:focus,
+.wpcf7 .input-group input[type=search]:focus,
+.input-group .wpcf7 input[type=url]:focus,
+.wpcf7 .input-group input[type=url]:focus,
+.input-group .wpcf7 input[type=tel]:focus,
+.wpcf7 .input-group input[type=tel]:focus,
+.input-group .wpcf7 input[type=number]:focus,
+.wpcf7 .input-group input[type=number]:focus,
+.input-group .wpcf7 input[type=range]:focus,
+.wpcf7 .input-group input[type=range]:focus,
+.input-group .wpcf7 input[type=date]:focus,
+.wpcf7 .input-group input[type=date]:focus,
+.input-group .wpcf7 input[type=month]:focus,
+.wpcf7 .input-group input[type=month]:focus,
+.input-group .wpcf7 input[type=week]:focus,
+.wpcf7 .input-group input[type=week]:focus,
+.input-group .wpcf7 input[type=time]:focus,
+.wpcf7 .input-group input[type=time]:focus,
+.input-group .wpcf7 input[type=datetime]:focus,
+.wpcf7 .input-group input[type=datetime]:focus,
+.input-group .wpcf7 input[type=datetime-local]:focus,
+.wpcf7 .input-group input[type=datetime-local]:focus,
+.input-group .wpcf7 input[type=color]:focus,
+.wpcf7 .input-group input[type=color]:focus,
+.input-group .wpcf7 input[type=email]:focus,
+.wpcf7 .input-group input[type=email]:focus,
+.input-group .wpcf7 input[type=file]:focus,
+.wpcf7 .input-group input[type=file]:focus,
+.input-group .wpcf7 input[type=submit]:focus,
+.wpcf7 .input-group input[type=submit]:focus,
+.input-group .wpcf7 select:focus,
+.wpcf7 .input-group select:focus,
+.input-group .wpcf7 textarea:focus,
+.wpcf7 .input-group textarea:focus {
+  box-shadow: none;
+}
+
 .search-result-wrapper {
   max-width: 80%;
   margin: 0 auto;
@@ -16324,7 +16324,7 @@ a {
 }
 .bb-category-main-wrapper .bb-category-main-grid {
   display: grid;
-  grid-template-columns: auto 380px;
+  grid-template-columns: auto;
 }
 @media (max-width: 1062px) {
   .bb-category-main-wrapper .bb-category-main-grid {
@@ -16406,10 +16406,6 @@ a {
   margin-top: 10px;
   font-size: clamp(1.125rem, 1.5vw + 0.75rem, 1.8rem);
   font-weight: bold;
-}
-.bb-article-category .bb-article-item:first-child img {
-  max-width: 300px;
-  height: auto;
 }
 
 .bb-article-grid-section {
@@ -16577,7 +16573,7 @@ a {
   border-right: 1px solid #1A1440;
   border-bottom: 1px solid #1A1440;
   display: grid;
-  grid-template-columns: auto 380px;
+  grid-template-columns: auto;
 }
 .bb-category-more-industrie-section .more-industrie-main {
   padding: 40px 30px;
@@ -16615,7 +16611,8 @@ a {
 .bb-category-more-industrie-section .more-industrie-main .industrie-news-card div h5, .bb-category-more-industrie-section .more-industrie-main .industrie-news-card div .h5 {
   font-size: 22px;
   font-weight: 500;
-  max-width: 450px;
+  max-width: 80%;
+  width: 100%;
 }
 .bb-category-more-industrie-section .more-industrie-main .industrie-news-card img {
   width: 200px;
@@ -16726,7 +16723,6 @@ a {
 .sub-category__title {
   font-size: 2.6rem;
   padding: 20px 1.875rem;
-  border-bottom: 1px solid #1A1440;
 }
 .sub-category__cta-link {
   padding: 20px 1.875rem;
@@ -16786,7 +16782,7 @@ a {
   padding-bottom: 20px;
   transition: all 0.3s ease;
   position: relative;
-  width: 90%;
+  width: 100%;
   cursor: pointer;
 }
 .more-industrie-main .industrie-news-card:hover {
@@ -16808,7 +16804,8 @@ a {
 .more-industrie-main .industrie-news-card div h5, .more-industrie-main .industrie-news-card div .h5 {
   font-size: 22px;
   font-weight: 500;
-  max-width: 450px;
+  max-width: 90%;
+  width: 100%;
 }
 .more-industrie-main .industrie-news-card img {
   width: 200px;

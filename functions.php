@@ -30,7 +30,7 @@ function theme_enqueue_styles() {
 
 	$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 	// Grab asset urls.
-	$theme_styles  = "/css/child-theme{$suffix}.css";
+	$theme_styles  = "/css/child-theme.css";
 	$theme_scripts = "/js/child-theme{$suffix}.js";
 
 	wp_enqueue_style( 'child-understrap-styles', get_stylesheet_directory_uri() . $theme_styles, array(), $the_theme->get( 'Version' ) );

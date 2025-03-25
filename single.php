@@ -40,9 +40,9 @@ $container = get_theme_mod( 'understrap_container_type' );
 				if ($parent_category) : ?>
 					<div class="article-heading-left">
 						<h6>
-							<?php echo esc_html($parent_category->name); ?>
+							<a href="<?php echo get_category_link($parent_category->term_id); ?>"><?php echo esc_html($parent_category->name); ?></a>
 							<?php if ($child_category) : ?>
-								<br> <span><?php echo esc_html($child_category->name); ?></span>
+								<br> <span><a href="<?php echo get_category_link($child_category->term_id); ?>"><?php echo esc_html($child_category->name); ?></a></span>
 							<?php endif; ?>
 						</h6>
 					</div>

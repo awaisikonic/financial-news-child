@@ -729,3 +729,19 @@ function load_more_parent_cat_news() {
 }
 add_action('wp_ajax_load_more_parent_cat_news', 'load_more_parent_cat_news');
 add_action('wp_ajax_nopriv_load_more_parent_cat_news', 'load_more_parent_cat_news');
+
+/**
+ * allow_jwt_auth_for_rest_api
+ */
+function allow_jwt_auth_for_rest_api($result, $server, $request) {
+    $route = $request->get_route();
+    
+    // Allow public access to JWT authentication route
+    if (strpos($route, '/jwt-auth/v1/token') !== false) {
+        return true;
+    }
+    
+    return $result;
+}
+
+add_filter('rest_authentication_errors', 'allow_jwt_auth_for_rest_api', 10, 3);

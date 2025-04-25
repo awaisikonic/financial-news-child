@@ -63,7 +63,14 @@ $container = get_theme_mod( 'understrap_container_type' );
 				<div></div>
 				<div class="artical-main-content">
 					<?php
-					the_content();
+					$post_temp_content = get_field('post_temp_content', get_the_ID());
+					if( '' !== get_post()->post_content ) {
+						the_content();
+					}
+					else{
+						echo $post_temp_content;
+					}
+					
 					?>
 				</div>
 			</div>

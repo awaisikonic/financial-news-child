@@ -17417,6 +17417,11 @@ a {
   font-weight: 600;
 }
 
+.main-content-with-audio .artical-main-content img {
+  width: 100%;
+  margin: 15px 0;
+}
+
 @media (max-width: 1024px) {
   .container {
     max-width: 100%;

@@ -409,25 +409,53 @@ add_action('admin_enqueue_scripts', 'gpt_enqueue_editor_script');
 /**
  * GPT Rewrite Custom Field
  */
-add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+function extract_images_and_replace_with_placeholders($content) {
+    $placeholders = [];
+    $index = 0;
+
+    // Match <img> tags alone or inside wrappers (e.g., <div> or <figure>)
+    $pattern = '/<(?:(div|figure)[^>]*>)?\s*(<img[^>]+>)\s*(?:<\/\1>)?/i';
+
+    $content_with_placeholders = preg_replace_callback($pattern, function($matches) use (&$placeholders, &$index) {
+        $full_match = $matches[0];
+        $placeholder = '{IMAGE_' . $index . '}';
+        $placeholders[$placeholder] = $full_match;
+        $index++;
+        return $placeholder;
+    }, $content);
+
+    return [
+        'content' => $content_with_placeholders,
+        'placeholders' => $placeholders,
+    ];
+}
+
+function reinsert_images_into_content($rewritten_content, $placeholders) {
+    foreach ($placeholders as $placeholder => $original_html) {
+        // Strip extra wrapping quotes or tags from OpenAI
+        $rewritten_content = preg_replace_callback('/<img[^>]*src=["\']?' . preg_quote($placeholder, '/') . '["\']?[^>]*>/i', function () use ($original_html) {
+            return $original_html;
+        }, $rewritten_content);
+
+        // Fallback direct replacement (if placeholder isn't inside <img>)
+        $rewritten_content = str_replace($placeholder, $original_html, $rewritten_content);
+    }
+    return $rewritten_content;
+}
+
 function gpt_rewrite_custom_field() {
     if (!current_user_can('edit_posts')) {
         wp_send_json_error(['message' => 'Unauthorized'], 403);
     }
 
     $post_id = intval($_POST['post_id']);
-    $custom_field_content = wp_kses_post($_POST['custom_field_content']);
+    $custom_field_content = wp_unslash($_POST['custom_field_content']); // Allow HTML
     $openai_platform = get_field('openai_platform', 'option');
 
-    // Extract all <img> tags and replace them with placeholders
-    preg_match_all('/<img[^>]+>/i', $custom_field_content, $img_matches);
-    $images = $img_matches[0];
-
-    $content_with_placeholders = $custom_field_content;
-    foreach ($images as $index => $img_tag) {
-        $placeholder = '[[IMAGE_' . ($index + 1) . ']]';
-        $content_with_placeholders = str_replace($img_tag, $placeholder, $content_with_placeholders);
-    }
+    // Extract images and replace with placeholders
+    $extracted = extract_images_and_replace_with_placeholders($custom_field_content);
+    $content_without_images = $extracted['content'];
+    $placeholders = $extracted['placeholders'];
 
     // Call OpenAI API
     $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
@@ -437,13 +465,11 @@ function gpt_rewrite_custom_field() {
         ],
         'body' => json_encode([
             'model' => 'gpt-4',
-            'temperature' => 0.7,
-            'top_p' => 1,
-            'max_tokens' => 2048,
             'messages' => [
                 ['role' => 'system', 'content' => 'You are a helpful AI that rewrites content in an engaging way.'],
-                ['role' => 'user', 'content' => "Rewrite the following post description in detail. Preserve all placeholder tags such as [[IMAGE_1]], [[IMAGE_2]], etc. in the same position. These placeholders will be replaced with actual HTML image tags later. Use <h3> for headings and <p> for paragraphs.\n\n" . $content_with_placeholders],
+                ['role' => 'user', 'content' => "Rewrite the following post description. The rewritten content should be extensive and detailed, maintaining the same depth and length as the original content. Do not minimize or shorten the content in any way. Add appropriate HTML tags to format the content. Use <h3> tags for all headings. Use <p> tags for all paragraphs. Do not add any extra <div> tags, inline styles, or CSS classes. Do not remove, alter, or reposition any images that are included or described in the original content. All images must remain in the same order and context as provided.\n\n" . $content_without_images],
             ],
+            'max_tokens' => 1000,
         ]),
         'timeout' => 60,
     ]);
@@ -459,15 +485,13 @@ function gpt_rewrite_custom_field() {
     }
 
     $rewritten_content = trim($body['choices'][0]['message']['content']);
+    $rewritten_with_images = reinsert_images_into_content($rewritten_content, $placeholders);
 
-    // Replace placeholders back with original images
-    foreach ($images as $index => $img_tag) {
-        $placeholder = '[[IMAGE_' . ($index + 1) . ']]';
-        $rewritten_content = str_replace($placeholder, $img_tag, $rewritten_content);
-    }
-
-    wp_send_json_success(['rewritten_content' => $rewritten_content]);
+    wp_send_json_success(['rewritten_content' => $rewritten_with_images]);
 }
+add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+add_action('wp_ajax_nopriv_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+
 /**
  * Disable Block Editor
  */

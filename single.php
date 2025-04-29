@@ -231,7 +231,7 @@ $container = get_theme_mod( 'understrap_container_type' );
     text-align: right;
   }
   .tts-player-wrap {
-	margin: 20px 0;
+	margin: 50px 0 20px;
   }
 </style>
 <?php

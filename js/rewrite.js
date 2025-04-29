@@ -1,15 +1,20 @@
 jQuery(document).ready(function ($) {
     $(document).on('click', '#gpt-rewrite-editor-btn', function () {
-        let customFieldContent = $('#acf-field_67dc3d63e652c').val(); // Change to your custom field ID
+        if ($('#post-body-content .autosave-info').length) {
+            alert("Please resolve the autosave conflict before rewriting. Click 'View the autosave' or update the post to clear it.");
+            return;
+        }
+        let customFieldContent = $('#acf-field_67dc3d63e652c').val();
         let postId = $('#post_ID').val();
-
+    
         if (!customFieldContent) {
             alert("Please enter content in the custom field first.");
             return;
         }
-
-        $(this).text('Rewriting...').prop('disabled', true);
-
+    
+        let $btn = $(this);
+        $btn.text('Rewriting...').prop('disabled', true);
+    
         $.post(gpt_ajax.ajax_url, {
             action: 'gpt_rewrite_custom_field',
             post_id: postId,
@@ -17,17 +22,33 @@ jQuery(document).ready(function ($) {
         })
         .done(function (response) {
             if (response.success) {
-                // Update WordPress post editor content
+                const rewritten = response.data.rewritten_content;
+                const factCheck = response.data.fact_check_result || '';
+    
+                // Check for fact-check result
+                const lowerCaseFact = factCheck.toLowerCase();
+                const isAccurate = lowerCaseFact.includes('accurate') || lowerCaseFact.includes('correct') || lowerCaseFact.includes('factual');
+
+                // Paste rewritten content into editor
                 if (typeof tinyMCE !== "undefined" && tinyMCE.activeEditor) {
-                    tinyMCE.activeEditor.setContent(response.data.rewritten_content);
+                    console.log('rewritten: ', rewritten);
+                    tinyMCE.activeEditor.setContent(rewritten);
                 }
-                $('#content').val(response.data.rewritten_content); // Backup for non-TinyMCE mode
+                $('#content').val(rewritten);
+    
+                // Alert if fact check flags any issue
+                if (!isAccurate) {
+                    alert("⚠️ Fact-check warning:\n\n" + factCheck);
+                }
             } else {
                 alert("Error: " + response.data.message);
             }
         })
+        .fail(function () {
+            alert("AJAX request failed. Please try again.");
+        })
         .always(function () {
-            $('#gpt-rewrite-editor-btn').text('Rewrite & Paste in Editor').prop('disabled', false);
+            $btn.text('Rewrite & Paste in Editor').prop('disabled', false);
         });
     });
 

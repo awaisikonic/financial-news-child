@@ -409,6 +409,7 @@ add_action('admin_enqueue_scripts', 'gpt_enqueue_editor_script');
 /**
  * GPT Rewrite Custom Field
  */
+/*
 function extract_images_and_replace_with_placeholders($content) {
     $placeholders = [];
     $index = 0;
@@ -491,7 +492,133 @@ function gpt_rewrite_custom_field() {
 }
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
 add_action('wp_ajax_nopriv_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+*/
+/**
+ * Extract images and replace with placeholders.
+ */
+function extract_images_and_replace_with_placeholders($content) {
+    $placeholders = [];
+    $index = 0;
 
+    // Updated regex to handle standalone and wrapped images
+    $pattern = '/<(?:(div|figure)[^>]*>\s*(?:.*?\s*)?)?<img[^>]+>(?:\s*.*?\s*)?<\/\1>|<img[^>]+>/is';
+
+    $content_with_placeholders = preg_replace_callback($pattern, function($matches) use (&$placeholders, &$index) {
+        $full_match = $matches[0];
+        $placeholder = '{IMAGE_' . $index . '}';
+        $placeholders[$placeholder] = $full_match;
+        $index++;
+        return $placeholder;
+    }, $content);
+
+    return [
+        'content' => $content_with_placeholders,
+        'placeholders' => $placeholders,
+    ];
+}
+
+/**
+ * Reinsert original images into rewritten content.
+ */
+function reinsert_images_into_content($rewritten_content, $placeholders) {
+    foreach ($placeholders as $placeholder => $original_html) {
+        $rewritten_content = str_replace($placeholder, $original_html, $rewritten_content);
+    }
+    return $rewritten_content;
+}
+
+/**
+ * GPT Rewrite and Fact Check Custom Field.
+ */
+function gpt_rewrite_custom_field() {
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(['message' => 'Unauthorized'], 403);
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $custom_field_content = wp_unslash($_POST['custom_field_content']);
+    $openai_key = get_field('openai_platform', 'option');
+
+    // Step 1: Extract images and replace with placeholders
+    $extracted = extract_images_and_replace_with_placeholders($custom_field_content);
+    $content_with_placeholders = $extracted['content'];
+    $placeholders = $extracted['placeholders'];
+    // Step 2: Rewrite the content
+    $rewrite_prompt = "Rewrite the following post description. The rewritten content should be extensive and detailed, maintaining the same depth and length as the original content. Use <h3> for headings and <p> for paragraphs. Do not remove, alter, or reposition any image placeholders like {IMAGE_0}, {IMAGE_1}, etc.\n\n" . $content_with_placeholders;
+
+    $rewritten_response = call_openai_api($openai_key, $rewrite_prompt);
+    if (!$rewritten_response) {
+        wp_send_json_error(['message' => 'Failed to rewrite content.']);
+    }
+    // Step 3: Fact check the rewritten content
+    $fact_check_result = gpt_fact_check_content($rewritten_response, $openai_key);
+    $rewritten_with_images = reinsert_images_into_content($rewritten_response, $placeholders);
+
+    wp_send_json_success([
+        'rewritten_content' => $rewritten_with_images,
+        'fact_check_result' => $fact_check_result,
+    ]);
+}
+add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+add_action('wp_ajax_nopriv_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+
+/**
+ * Helper to call OpenAI API
+ */
+function call_openai_api($api_key, $content_prompt) {
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => json_encode([
+            'model' => 'gpt-4',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a helpful and factual AI content assistant.'],
+                ['role' => 'user', 'content' => $content_prompt],
+            ],
+            'max_tokens' => 2000,
+        ]),
+        'timeout' => 60,
+    ]);
+
+    if (is_wp_error($response)) return false;
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+
+    return $body['choices'][0]['message']['content'] ?? false;
+}
+
+/**
+ * Helper to Fact check OpenAI API
+ */
+function gpt_fact_check_content($content, $openai_platform) {
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $openai_platform,
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => json_encode([
+            'model' => 'gpt-4',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a fact-checking assistant. Analyze the following article and respond whether the factual content is accurate or if there are any factual errors or misleading information. Do NOT remove or alter any image placeholders. Only respond with the fact-checking analysis, not a rewritten version.'],
+                ['role' => 'user', 'content' => $content],
+            ],
+            'max_tokens' => 2000,
+        ]),
+        'timeout' => 60,
+    ]);
+
+    if (is_wp_error($response)) {
+        return 'Fact check failed: ' . $response->get_error_message();
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    if (!$body || isset($body['error'])) {
+        return 'Fact check error: ' . ($body['error']['message'] ?? 'Unknown error');
+    }
+
+    return trim($body['choices'][0]['message']['content']);
+}
 /**
  * Disable Block Editor
  */

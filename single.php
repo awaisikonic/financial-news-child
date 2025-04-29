@@ -70,7 +70,21 @@ $container = get_theme_mod( 'understrap_container_type' );
 					else{
 						echo $post_temp_content;
 					}
-					
+					$source = get_field('source', get_the_ID());
+					$source_link = get_field('source_link', get_the_ID());
+
+					if ($source){
+					?>
+						<footer class="article-credit">
+							<p>
+							<strong>Source:</strong>
+							<a href="<?php echo $source_link;?>" target="_blank" rel="noopener noreferrer">
+								Original Article on <?php echo $source;?>
+							</a>
+							</p>
+						</footer>
+					<?php 
+					}
 					?>
 				</div>
 			</div>

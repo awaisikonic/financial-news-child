@@ -16871,7 +16871,7 @@ a {
 }
 .article-grid {
   display: grid;
-  grid-template-columns: auto 270px;
+  grid-template-columns: auto 50px;
   gap: 20px;
   padding: 10px 30px;
   border-left: 1px solid #1A1440;
@@ -16887,7 +16887,7 @@ a {
 .article-grid .article-grid-inner-grid {
   display: grid;
   width: 100%;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 350px 1fr;
   gap: 20px;
 }
 @media (max-width: 1162px) {

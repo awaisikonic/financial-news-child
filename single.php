@@ -37,14 +37,16 @@ $container = get_theme_mod( 'understrap_container_type' );
 				}
 
 				// Display parent and child category
-				if ($parent_category) : ?>
+          ?>
 					<div class="article-heading-left">
-						<h6>
+          <?php if ($parent_category) : ?>
+            <h6>
 							<a href="<?php echo get_category_link($parent_category->term_id); ?>"><?php echo esc_html($parent_category->name); ?></a>
 							<?php if ($child_category) : ?>
 								<br> <span><a href="<?php echo get_category_link($child_category->term_id); ?>"><?php echo esc_html($child_category->name); ?></a></span>
 							<?php endif; ?>
 						</h6>
+            <?php endif; ?>
 						<div class="tts-player-wrap">
 							<h3>Want to listen to this article?</h3>
 							<p>Click the play button below to have the article read aloud to you. You can pause, resume, or skip ahead anytime!</p>
@@ -55,7 +57,7 @@ $container = get_theme_mod( 'understrap_container_type' );
 							</div>
 						</div>
 					</div>
-				<?php endif; ?>
+
 				<div class="article-heading-right">
 					<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
 					<?php if (has_post_thumbnail()) : ?>

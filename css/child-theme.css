@@ -18124,5 +18124,8 @@ body.understrap-no-sidebar .wp-block-cover.alignwide {
     padding: 20px 10px;
   }
 }
+.header .desktop-header-wrapper .upper-header .upper-header-wrapper img {
+  width: 180px;
+}
 
 /*# sourceMappingURL=child-theme.css.map */

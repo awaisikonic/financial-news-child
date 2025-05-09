@@ -1,9 +1,5 @@
 jQuery(document).ready(function ($) {
     $(document).on('click', '#gpt-rewrite-editor-btn', function () {
-        if ($('#post-body-content .autosave-info').length) {
-            alert("Please resolve the autosave conflict before rewriting. Click 'View the autosave' or update the post to clear it.");
-            return;
-        }
         let customFieldContent = $('#acf-field_67dc3d63e652c').val();
         let postId = $('#post_ID').val();
     
@@ -29,11 +25,15 @@ jQuery(document).ready(function ($) {
                 const lowerCaseFact = factCheck.toLowerCase();
                 const isAccurate = lowerCaseFact.includes('accurate') || lowerCaseFact.includes('correct') || lowerCaseFact.includes('factual');
 
-                // Paste rewritten content into editor
+                // Check for autosave and reload the editor content
                 if (typeof tinyMCE !== "undefined" && tinyMCE.activeEditor) {
-                    console.log('rewritten: ', rewritten);
-                    tinyMCE.activeEditor.setContent(rewritten);
+                    tinyMCE.activeEditor.execCommand('mceRemoveEditor', false, 'content');
+                    tinyMCE.execCommand('mceAddEditor', false, 'content');
+                    setTimeout(() => {
+                        tinyMCE.activeEditor.setContent(rewritten);
+                    }, 300); // slight delay to ensure editor is reinitialized
                 }
+
                 $('#content').val(rewritten);
     
                 // Alert if fact check flags any issue

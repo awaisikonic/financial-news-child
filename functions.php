@@ -392,7 +392,7 @@ function gpt_enqueue_editor_script($hook) {
             'gpt-editor-rewrite',
             get_stylesheet_directory_uri() .'/js/rewrite.js',
             ['jquery'],
-            '1.0',
+            '1.1',
             true
         );
 

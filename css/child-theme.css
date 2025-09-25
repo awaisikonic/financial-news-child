@@ -16890,6 +16890,13 @@ a {
   grid-template-columns: 350px 1fr;
   gap: 20px;
 }
+.article-grid .article-grid-inner-grid ul {
+  padding-left: 15px;
+}
+.article-grid .article-grid-inner-grid ul li {
+  list-style: disc;
+  margin-bottom: 10px;
+}
 @media (max-width: 1162px) {
   .article-grid .article-grid-inner-grid {
     grid-template-columns: 1fr;

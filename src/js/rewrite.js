@@ -21,7 +21,9 @@ jQuery(document).ready(function ($) {
           const rewritten = response.data.rewritten_content;
           const factCheck = response.data.fact_check_result || "";
           const articleSummary = response.data.article_summary || "";
+          const whyItMatters = response.data.why_it_matters || "";
           //console.log("Article Summary:", articleSummary);
+          //console.log("Why It Matters:", whyItMatters);
 
           // Check for fact-check result
           const lowerCaseFact = factCheck.toLowerCase();
@@ -45,6 +47,7 @@ jQuery(document).ready(function ($) {
 
           $("#content").val(rewritten);
           $("#acf-field_68d550a60c415").val(articleSummary);
+          $("#acf-field_68d57d6b9d0b8").val(whyItMatters);
 
           // Alert if fact check flags any issue
           if (!isAccurate) {

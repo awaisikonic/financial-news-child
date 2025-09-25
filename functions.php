@@ -576,11 +576,13 @@ function gpt_rewrite_custom_field()
     $fact_check_result = gpt_fact_check_content($rewritten_response, $openai_key);
     $rewritten_with_images = reinsert_images_into_content($rewritten_response, $placeholders);
     $article_summary = gpt_generate_summary($rewritten_with_images, $openai_key);
+    $why_it_matters = gpt_generate_why_it_matters($rewritten_with_images, $openai_key);
 
     wp_send_json_success([
         'rewritten_content' => $rewritten_with_images,
         'fact_check_result' => $fact_check_result,
         'article_summary' => $article_summary,
+        'why_it_matters' => $why_it_matters,
     ]);
 }
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
@@ -684,6 +686,33 @@ function gpt_generate_summary($content, $api_key)
 
     return $summary;
 }
+
+/**
+ * Why It Matters 
+ */
+function gpt_generate_why_it_matters($content, $api_key)
+{
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => json_encode([
+            'model' => 'gpt-4',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You explain the significance of financial news to investors.'],
+                ['role' => 'user', 'content' => "Explain why the following news matters to readers in 2 sentences:\n\n" . $content],
+            ],
+            'max_tokens' => 300,
+        ]),
+        'timeout' => 60,
+    ]);
+
+    if (is_wp_error($response)) return false;
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return $body['choices'][0]['message']['content'] ?? false;
+}
+
 
 
 /**

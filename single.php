@@ -18,6 +18,7 @@ $container = get_theme_mod('understrap_container_type');
   while (have_posts()) {
     the_post();
     $article_summary = get_field('article_summary');
+    $why_it_matters = get_field('why_it_matters');
   ?>
     <div class="article-grid main-content-with-audio">
       <div class="article-grid-inner-grid article-heading">
@@ -105,6 +106,10 @@ $container = get_theme_mod('understrap_container_type');
           <?php
           }
           ?>
+          <?php if (!empty($why_it_matters)) { ?>
+            <h4>Why It matters</h4>
+            <p><?php echo $why_it_matters; ?></p>
+          <?php } ?>
         </div>
       </div>
     </div>

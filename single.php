@@ -135,6 +135,12 @@ $container = get_theme_mod('understrap_container_type');
   ?>
 </section>
 <section class="related-articles">
+
+  <div class="top-reads covered-by">
+    <h2>Also covered by</h2>
+    <?php get_template_part('template-parts/covered-by'); ?>
+  </div>
+
   <h2>More From InsightNews</h2>
   <?php get_template_part('template-parts/related'); ?>
 

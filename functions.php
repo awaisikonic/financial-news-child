@@ -560,6 +560,7 @@ function gpt_rewrite_custom_field()
 
     $post_id = intval($_POST['post_id']);
     $custom_field_content = wp_unslash($_POST['custom_field_content']);
+    $title = wp_unslash($_POST['title']);
     $openai_key = get_field('openai_platform', 'option');
 
     // Step 1: Extract images and replace with placeholders
@@ -577,13 +578,43 @@ function gpt_rewrite_custom_field()
 
     $fact_check_result = gpt_fact_check_content($rewritten_response, $openai_key);
     $rewritten_with_images = reinsert_images_into_content($rewritten_response, $placeholders);
+    $news_coverage_comparison = gpt_extract_keywords($title, $openai_key);
+    update_post_meta($post_id, '_article_keywords', $news_coverage_comparison);
 
     wp_send_json_success([
         'rewritten_content' => $rewritten_with_images,
         'fact_check_result' => $fact_check_result,
+        'news_coverage_comparison' => $news_coverage_comparison,
     ]);
 }
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+
+
+/**
+ * News coverage comparison 
+ */
+function gpt_extract_keywords($title, $api_key)
+{
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => json_encode([
+            'model' => 'gpt-4',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a keyword extraction assistant.'],
+                ['role' => 'user', 'content' => "Extract 5–10 key terms from this headline/article for clustering:\n\n" . $title],
+            ],
+            'max_tokens' => 100,
+        ]),
+        'timeout' => 30,
+    ]);
+    if (is_wp_error($response)) return [];
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return isset($body['choices'][0]['message']['content']) ? explode(',', $body['choices'][0]['message']['content']) : [];
+}
+
 
 /**
  * Generate article summary

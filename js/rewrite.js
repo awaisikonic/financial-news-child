@@ -56,6 +56,7 @@ jQuery(document).ready(function ($) {
   // Main rewrite function
   $(document).on("click", "#gpt-rewrite-editor-btn", function () {
     let customFieldContent = $("#acf-field_67dc3d63e652c").val();
+    let title = $("#title").val();
     let postId = $("#post_ID").val();
 
     if (!customFieldContent) {
@@ -70,11 +71,15 @@ jQuery(document).ready(function ($) {
       action: "gpt_rewrite_custom_field",
       post_id: postId,
       custom_field_content: customFieldContent,
+      title: title,
     })
       .done(function (response) {
         if (response.success) {
           const rewritten = response.data.rewritten_content;
           const factCheck = response.data.fact_check_result || "";
+          const newsCoverageComparison =
+            response.data.news_coverage_comparison || "";
+          console.log("News Coverage Comparison:", newsCoverageComparison);
 
           // Check for fact-check result
           const lowerCaseFact = factCheck.toLowerCase();

@@ -19,6 +19,15 @@ $container = get_theme_mod('understrap_container_type');
     the_post();
     $article_summary = get_field('article_summary');
     $why_it_matters = get_field('why_it_matters');
+    $sentiment_analysis_indicator = get_field('sentiment_analysis_indicator');
+    $tag_class = '';
+    if ($sentiment_analysis_indicator === 'Positive') {
+      $tag_class = 'tag-success';
+    } elseif ($sentiment_analysis_indicator === 'Neutral') {
+      $tag_class = 'tag-warning';
+    } elseif ($sentiment_analysis_indicator === 'Negative') {
+      $tag_class = 'tag-error';
+    }
   ?>
     <div class="article-grid main-content-with-audio">
       <div class="article-grid-inner-grid article-heading">
@@ -47,7 +56,7 @@ $container = get_theme_mod('understrap_container_type');
             <h6>
               <a href="<?php echo get_category_link($parent_category->term_id); ?>"><?php echo esc_html($parent_category->name); ?></a>
               <?php if ($child_category) : ?>
-                <br> <span><a href="<?php echo get_category_link($child_category->term_id); ?>"><?php echo esc_html($child_category->name); ?></a></span>
+                > <span><a href="<?php echo get_category_link($child_category->term_id); ?>"><?php echo esc_html($child_category->name); ?></a></span>
               <?php endif; ?>
             </h6>
           <?php endif; ?>
@@ -69,6 +78,12 @@ $container = get_theme_mod('understrap_container_type');
         </div>
 
         <div class="article-heading-right">
+          <?php if (!empty($sentiment_analysis_indicator)) { ?>
+            <div class="sai-tag-wrap">
+              <h3>Sentiment Analysis</h3>
+              <span class="sai-tag <?php echo $tag_class; ?>"><?php echo $sentiment_analysis_indicator; ?></span>
+            </div>
+          <?php } ?>
           <?php the_title('<h1 class="entry-title">', '</h1>'); ?>
           <?php if (has_post_thumbnail()) : ?>
             <div class="article-heading-img">

@@ -512,6 +512,7 @@ function gpt_rewrite_custom_field() {
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
 add_action('wp_ajax_nopriv_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
 */
+
 /**
  * Extract images and replace with placeholders.
  */
@@ -549,7 +550,7 @@ function reinsert_images_into_content($rewritten_content, $placeholders)
 }
 
 /**
- * GPT Rewrite and Fact Check Custom Field.
+ * Main rewrite function
  */
 function gpt_rewrite_custom_field()
 {
@@ -565,6 +566,7 @@ function gpt_rewrite_custom_field()
     $extracted = extract_images_and_replace_with_placeholders($custom_field_content);
     $content_with_placeholders = $extracted['content'];
     $placeholders = $extracted['placeholders'];
+
     // Step 2: Rewrite the content
     $rewrite_prompt = "Rewrite the following post description. The rewritten content should be extensive and detailed, maintaining the same depth and length as the original content. Use <h3> for headings and <p> for paragraphs. Do not remove, alter, or reposition any image placeholders like {IMAGE_0}, {IMAGE_1}, etc.\n\n" . $content_with_placeholders;
 
@@ -572,21 +574,99 @@ function gpt_rewrite_custom_field()
     if (!$rewritten_response) {
         wp_send_json_error(['message' => 'Failed to rewrite content.']);
     }
-    // Step 3: Fact check the rewritten content
-    $fact_check_result = gpt_fact_check_content($rewritten_response, $openai_key);
+
     $rewritten_with_images = reinsert_images_into_content($rewritten_response, $placeholders);
-    $article_summary = gpt_generate_summary($rewritten_with_images, $openai_key);
-    $why_it_matters = gpt_generate_why_it_matters($rewritten_with_images, $openai_key);
 
     wp_send_json_success([
         'rewritten_content' => $rewritten_with_images,
-        'fact_check_result' => $fact_check_result,
-        'article_summary' => $article_summary,
-        'why_it_matters' => $why_it_matters,
     ]);
 }
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
-add_action('wp_ajax_nopriv_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+
+/**
+ * Generate article summary
+ */
+function gpt_generate_article_summary()
+{
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(['message' => 'Unauthorized'], 403);
+    }
+
+    $content = wp_unslash($_POST['content']);
+    $openai_key = get_field('openai_platform', 'option');
+
+    // Extract images first to preserve them
+    $extracted = extract_images_and_replace_with_placeholders($content);
+    $content_with_placeholders = $extracted['content'];
+    $placeholders = $extracted['placeholders'];
+
+    $summary = gpt_generate_summary($content_with_placeholders, $openai_key);
+
+    if (!$summary) {
+        wp_send_json_error(['message' => 'Failed to generate summary.']);
+    }
+
+    wp_send_json_success([
+        'summary' => $summary,
+    ]);
+}
+add_action('wp_ajax_gpt_generate_article_summary', 'gpt_generate_article_summary');
+
+/**
+ * Generate Why It Matters
+ */
+function gpt_generate_why_it_matters_ajax()
+{
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(['message' => 'Unauthorized'], 403);
+    }
+
+    $content = wp_unslash($_POST['content']);
+    $openai_key = get_field('openai_platform', 'option');
+
+    // Extract images first to preserve them
+    $extracted = extract_images_and_replace_with_placeholders($content);
+    $content_with_placeholders = $extracted['content'];
+
+    $why_it_matters = gpt_generate_why_it_matters($content_with_placeholders, $openai_key);
+
+    if (!$why_it_matters) {
+        wp_send_json_error(['message' => 'Failed to generate "Why It Matters".']);
+    }
+
+    wp_send_json_success([
+        'why_it_matters' => $why_it_matters,
+    ]);
+}
+add_action('wp_ajax_gpt_generate_why_it_matters', 'gpt_generate_why_it_matters_ajax');
+
+/**
+ * Generate Sentiment Analysis
+ */
+function gpt_generate_sentiment_analysis_ajax()
+{
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(['message' => 'Unauthorized'], 403);
+    }
+
+    $content = wp_unslash($_POST['content']);
+    $openai_key = get_field('openai_platform', 'option');
+
+    // Extract images first to preserve them
+    $extracted = extract_images_and_replace_with_placeholders($content);
+    $content_with_placeholders = $extracted['content'];
+
+    $sentiment_analysis = gpt_sentiment_analysis($content_with_placeholders, $openai_key);
+
+    if (!$sentiment_analysis) {
+        wp_send_json_error(['message' => 'Failed to generate sentiment analysis.']);
+    }
+
+    wp_send_json_success([
+        'sentiment_analysis' => $sentiment_analysis,
+    ]);
+}
+add_action('wp_ajax_gpt_generate_sentiment_analysis', 'gpt_generate_sentiment_analysis_ajax');
 
 /**
  * Helper to call OpenAI API
@@ -713,6 +793,31 @@ function gpt_generate_why_it_matters($content, $api_key)
     return $body['choices'][0]['message']['content'] ?? false;
 }
 
+/**
+ * Sentiment analysis indicator (positive/negative/neutral) 
+ */
+function gpt_sentiment_analysis($content, $api_key)
+{
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => json_encode([
+            'model' => 'gpt-4',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are a sentiment analysis assistant.'],
+                ['role' => 'user', 'content' => "Classify the sentiment of this article as Positive, Negative, or Neutral:\n\n" . $content],
+            ],
+            'max_tokens' => 50,
+        ]),
+        'timeout' => 60,
+    ]);
+
+    if (is_wp_error($response)) return false;
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    return $body['choices'][0]['message']['content'] ?? 'Neutral';
+}
 
 
 /**

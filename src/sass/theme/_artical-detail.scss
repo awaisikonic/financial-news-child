@@ -20,6 +20,28 @@
     width: 100%;
     grid-template-columns: 350px 1fr;
     gap: 20px;
+    .sai-tag-wrap {
+      display: flex;
+      gap: 10px;
+
+      span.sai-tag {
+        padding: 5px 10px;
+        border-radius: 10px;
+        line-height: 1.2;
+      }
+      .tag-success {
+        background: #198754;
+        color: #fff;
+      }
+      .tag-warning {
+        background: #ffc107;
+        color: #1a1440;
+      }
+      .tag-error {
+        background: #dc3545;
+        color: #fff;
+      }
+    }
 
     ul {
       padding-left: 15px;

@@ -74,6 +74,14 @@ jQuery(document).ready(function ($) {
       .done(function (response) {
         if (response.success) {
           const rewritten = response.data.rewritten_content;
+          const factCheck = response.data.fact_check_result || "";
+
+          // Check for fact-check result
+          const lowerCaseFact = factCheck.toLowerCase();
+          const isAccurate =
+            lowerCaseFact.includes("accurate") ||
+            lowerCaseFact.includes("correct") ||
+            lowerCaseFact.includes("factual");
 
           // Update the editor content
           if (typeof tinyMCE !== "undefined" && tinyMCE.activeEditor) {
@@ -92,9 +100,10 @@ jQuery(document).ready(function ($) {
           hasGeneratedContent = true;
           toggleSecondaryButtons(true);
 
-          alert(
-            "Content rewritten successfully! You can now generate additional content using the buttons below."
-          );
+          // Alert if fact check flags any issue
+          if (!isAccurate) {
+            alert("⚠️ Fact-check warning:\n\n" + factCheck);
+          }
         } else {
           alert("Error: " + response.data.message);
         }

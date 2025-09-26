@@ -575,10 +575,12 @@ function gpt_rewrite_custom_field()
         wp_send_json_error(['message' => 'Failed to rewrite content.']);
     }
 
+    $fact_check_result = gpt_fact_check_content($rewritten_response, $openai_key);
     $rewritten_with_images = reinsert_images_into_content($rewritten_response, $placeholders);
 
     wp_send_json_success([
         'rewritten_content' => $rewritten_with_images,
+        'fact_check_result' => $fact_check_result,
     ]);
 }
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');

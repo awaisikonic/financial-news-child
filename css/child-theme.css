@@ -17408,7 +17408,7 @@ a {
   color: #32378C;
 }
 
-.article-grid {
+.my-account .article-grid {
   display: grid;
   grid-template-columns: auto;
   gap: 0px;
@@ -17416,23 +17416,20 @@ a {
   border-left: 1px solid #1a1440;
   border-right: 1px solid #1a1440;
 }
-.article-grid .article-grid-inner-grid {
+.my-account .article-grid .article-grid-inner-grid {
   display: grid;
   width: 100%;
   grid-template-columns: 1fr;
   gap: 20px;
 }
-
 .my-account .articles-section {
   border-bottom: 1px solid #1a1440;
   border-top: 1px solid #1a1440;
 }
-
-ul#member-secondary-nav li a {
+.my-account ul#member-secondary-nav li a {
   font-size: 16px;
 }
-
-.main-content-with-audio .artical-main-content ul {
+.my-account .main-content-with-audio .artical-main-content ul {
   margin-bottom: 2px;
   padding-left: 20px;
   margin-top: 2px;

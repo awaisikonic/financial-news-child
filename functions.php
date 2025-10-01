@@ -1084,17 +1084,34 @@ function load_more_parent_cat_news()
     ]);
 
     if ($more_news_query->have_posts()):
-        while ($more_news_query->have_posts()): $more_news_query->the_post(); ?>
+        while ($more_news_query->have_posts()): $more_news_query->the_post();
+            $post_id = get_the_ID();
+            $user_id = get_current_user_id();
+            $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+            $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+            $is_bookmarked = in_array($post_id, $saved_articles);
+            $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+            $button_text = $is_bookmarked ? 'Saved Article' : 'Bookmark This Article';
+            $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
+        ?>
             <div class="industrie-news-card">
                 <div>
                     <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
-                    <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h5>
+                    <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                    </h5>
                 </div>
                 <?php if (has_post_thumbnail()): ?>
                     <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
                 <?php endif; ?>
+                <?php if (is_user_logged_in()) { ?>
+                    <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                        <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                        <span class="bookmark-text"><?php echo $button_text; ?></span>
+                    </button>
+                <?php } ?>
             </div>
-<?php endwhile;
+        <?php endwhile;
         wp_reset_postdata();
     else:
         echo 'no_more_posts';
@@ -1316,4 +1333,215 @@ function direct_logout_tab_screen()
     wp_logout();
     wp_redirect(home_url());
     exit;
+}
+
+// AJAX handler for bookmarking
+function toggle_bookmark()
+{
+    if (!is_user_logged_in()) {
+        wp_die('You must be logged in to bookmark articles.');
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $user_id = get_current_user_id();
+
+    if (!$post_id) {
+        wp_die('Invalid post ID.');
+    }
+
+    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+    // Check if post is already bookmarked
+    $key = array_search($post_id, $saved_articles);
+
+    if ($key !== false) {
+        // Remove from bookmarks
+        unset($saved_articles[$key]);
+        $saved_articles = array_values($saved_articles); // Reindex array
+        $action = 'removed';
+        $message = 'Article removed from bookmarks';
+    } else {
+        // Add to bookmarks
+        $saved_articles[] = $post_id;
+        $action = 'added';
+        $message = 'Article added to bookmarks';
+    }
+
+    update_user_meta($user_id, 'saved_articles', $saved_articles);
+
+    wp_send_json_success(array(
+        'action' => $action,
+        'message' => $message,
+        'count' => count($saved_articles)
+    ));
+}
+add_action('wp_ajax_toggle_bookmark', 'toggle_bookmark');
+
+// Add Saved Articles tab to BuddyPress profile
+function add_saved_articles_bp_tab()
+{
+    global $bp;
+
+    bp_core_new_nav_item(array(
+        'name' => __('Saved Articles', 'buddypress'),
+        'slug' => 'saved-articles',
+        'screen_function' => 'saved_articles_screen',
+        'position' => 50,
+        'default_subnav_slug' => 'saved-articles',
+        'show_for_displayed_user' => true
+    ));
+}
+add_action('bp_setup_nav', 'add_saved_articles_bp_tab', 10);
+
+// Screen function for Saved Articles tab
+function saved_articles_screen()
+{
+    add_action('bp_template_content', 'saved_articles_content');
+    bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
+}
+
+// Content for Saved Articles tab
+function saved_articles_content()
+{
+    $user_id = bp_displayed_user_id();
+    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+
+    if (empty($saved_articles)) {
+        echo '<div class="saved-articles-empty">';
+        echo '<p>' . __('No saved articles yet.', 'buddypress') . '</p>';
+        echo '</div>';
+        return;
+    }
+
+    // Remove any invalid post IDs
+    $saved_articles = array_filter($saved_articles, function ($post_id) {
+        return get_post_status($post_id) === 'publish';
+    });
+
+    if (empty($saved_articles)) {
+        echo '<div class="saved-articles-empty">';
+        echo '<p>' . __('No saved articles yet.', 'buddypress') . '</p>';
+        echo '</div>';
+        return;
+    }
+
+    $args = array(
+        'post_type' => 'post',
+        'post__in' => $saved_articles,
+        'orderby' => 'post__in', // Maintain the order they were saved
+        'posts_per_page' => -1
+    );
+
+    $saved_posts = new WP_Query($args);
+
+    echo '<div class="saved-articles-list">';
+
+    while ($saved_posts->have_posts()) {
+        $saved_posts->the_post();
+        ?>
+        <div class="saved-article-item">
+            <div class="saved-article-image">
+                <?php if (has_post_thumbnail()) : ?>
+                    <a href="<?php the_permalink(); ?>">
+                        <?php the_post_thumbnail('medium'); ?>
+                    </a>
+                <?php else : ?>
+                    <a href="<?php the_permalink(); ?>">
+                        <img src="<?php echo get_template_directory_uri(); ?>/assets/images/default-image.jpg" alt="<?php the_title(); ?>">
+                    </a>
+                <?php endif; ?>
+            </div>
+            <div class="saved-article-content">
+                <h3 class="saved-article-title">
+                    <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                </h3>
+                <div class="saved-article-excerpt">
+                    <?php echo wp_trim_words(get_the_content(), 30, '...'); ?>
+                </div>
+                <div class="saved-article-meta">
+                    <span class="post-date"><?php echo get_the_date(); ?></span>
+                </div>
+            </div>
+        </div>
+    <?php
+    }
+
+    echo '</div>';
+
+    wp_reset_postdata();
+
+    // Add some CSS for the saved articles list
+    ?>
+    <style>
+        .saved-articles-list {
+            display: grid;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .saved-article-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .saved-article-image {
+            flex: 0 0 150px;
+        }
+
+        .saved-article-image img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 0px !important;
+        }
+
+        .saved-article-content {
+            flex: 1;
+        }
+
+        .saved-article-title {
+            margin: 0em 0 !important;
+        }
+
+        .saved-article-title a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        .saved-article-title a:hover {
+            color: #007cba;
+        }
+
+        .saved-article-excerpt {
+            color: #666;
+            margin: 5px 0px;
+            line-height: 1.5;
+        }
+
+        .saved-article-meta {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .saved-articles-empty {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .saved-article-item {
+                flex-direction: column;
+            }
+
+            .saved-article-image {
+                flex: 0 0 auto;
+            }
+        }
+    </style>
+<?php
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * The template for displaying Parent Category pages
  *
@@ -43,18 +44,33 @@ $main_posts = [];
                     'cat' => $parent_id,
                     'posts_per_page' => 2
                 ]);
-                while ($main_query->have_posts()): $main_query->the_post(); 
-                $main_posts[] = get_the_ID();
+                while ($main_query->have_posts()): $main_query->the_post();
+                    $main_posts[] = get_the_ID();
+
+                    $post_id = get_the_ID();
+                    $user_id = get_current_user_id();
+                    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+                    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+                    $is_bookmarked = in_array($post_id, $saved_articles);
+                    $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+                    $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
                 ?>
                     <article class="bb-article-item" data-post-id="<?php echo get_the_ID(); ?>">
                         <a href="<?php the_permalink(); ?>">
                             <?php if (has_post_thumbnail()): ?>
                                 <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
+                                <?php if (is_user_logged_in()) { ?>
+                                    <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                        <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                    </button>
+                                <?php } ?>
                             <?php endif; ?>
                             <h2><?php the_title(); ?></h2>
                         </a>
                     </article>
-                <?php endwhile; wp_reset_postdata(); ?>
+                <?php endwhile;
+                wp_reset_postdata(); ?>
             </section>
 
             <!-- Fetch 6 more recent posts -->
@@ -66,16 +82,31 @@ $main_posts = [];
                         'posts_per_page' => 6,
                         'offset' => 2
                     ]);
-                    while ($extra_posts->have_posts()): $extra_posts->the_post(); 
-                    $main_posts[] = get_the_ID();
+                    while ($extra_posts->have_posts()): $extra_posts->the_post();
+                        $main_posts[] = get_the_ID();
+
+                        $post_id = get_the_ID();
+                        $user_id = get_current_user_id();
+                        $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+                        $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+                        $is_bookmarked = in_array($post_id, $saved_articles);
+                        $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+                        $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
                     ?>
                         <a href="<?php the_permalink(); ?>" class="bb-article-item small" data-post-id="<?php echo get_the_ID(); ?>">
                             <?php if (has_post_thumbnail()): ?>
                                 <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
+                                <?php if (is_user_logged_in()) { ?>
+                                    <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                        <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                    </button>
+                                <?php } ?>
                             <?php endif; ?>
                             <h3><?php the_title(); ?></h3>
                         </a>
-                    <?php endwhile; wp_reset_postdata(); ?>
+                    <?php endwhile;
+                    wp_reset_postdata(); ?>
                 </div>
             </section>
         </div>
@@ -95,16 +126,31 @@ $main_posts = [];
                     'cat' => $child_cat->term_id,
                     'posts_per_page' => 4
                 ]);
-                while ($subcat_posts->have_posts()): $subcat_posts->the_post(); 
-                $main_posts[] = get_the_ID();
+                while ($subcat_posts->have_posts()): $subcat_posts->the_post();
+                    $main_posts[] = get_the_ID();
+
+                    $post_id = get_the_ID();
+                    $user_id = get_current_user_id();
+                    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+                    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+                    $is_bookmarked = in_array($post_id, $saved_articles);
+                    $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+                    $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
                 ?>
                     <a href="<?php the_permalink(); ?>" class="bb-article-item small" data-post-id="<?php echo get_the_ID(); ?>">
                         <?php if (has_post_thumbnail()): ?>
                             <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
+                            <?php if (is_user_logged_in()) { ?>
+                                <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                    <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                </button>
+                            <?php } ?>
                         <?php endif; ?>
                         <h3><?php the_title(); ?></h3>
                     </a>
-                <?php endwhile; wp_reset_postdata(); ?>
+                <?php endwhile;
+                wp_reset_postdata(); ?>
             </div>
         </section>
     <?php endforeach; ?>
@@ -120,7 +166,7 @@ $more_news_query = new WP_Query([
     'post__not_in' => $main_posts
 ]);
 
-if  ($more_news_query->have_posts()){
+if ($more_news_query->have_posts()) {
 ?>
     <section class="bb-category-more-industrie-section">
         <div class="more-industrie-main">
@@ -128,7 +174,18 @@ if  ($more_news_query->have_posts()){
 
             <div id="industrie-news-container">
                 <?php
-                while ($more_news_query->have_posts()): $more_news_query->the_post(); ?>
+                while ($more_news_query->have_posts()): $more_news_query->the_post();
+                    $post_id = get_the_ID();
+                    $user_id = get_current_user_id();
+                    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+                    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+                    $is_bookmarked = in_array($post_id, $saved_articles);
+                    $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+                    $button_text = $is_bookmarked ? 'Saved Article' : 'Bookmark This Article';
+                    $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
+                ?>
+
                     <div class="industrie-news-card" data-post-id="<?php echo get_the_ID(); ?>">
                         <div>
                             <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
@@ -137,8 +194,15 @@ if  ($more_news_query->have_posts()){
                         <?php if (has_post_thumbnail()): ?>
                             <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
                         <?php endif; ?>
+                        <?php if (is_user_logged_in()) { ?>
+                            <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                <span class="bookmark-text"><?php echo $button_text; ?></span>
+                            </button>
+                        <?php } ?>
                     </div>
-                <?php endwhile; wp_reset_postdata(); ?>
+                <?php endwhile;
+                wp_reset_postdata(); ?>
             </div>
 
             <div class="industrie-news-load-more-btn">
@@ -146,6 +210,6 @@ if  ($more_news_query->have_posts()){
             </div>
         </div>
     </section>
-<?php 
+<?php
 }
 get_footer(); ?>

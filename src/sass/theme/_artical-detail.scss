@@ -659,6 +659,110 @@
     margin-top: 2px;
   }
 }
+.bookmark-wrap {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.bookmark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  font-size: 16px;
+
+  .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.bb-article-item {
+  position: relative;
+
+  .bookmark-btn {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+}
+
+.article-card {
+  position: relative;
+
+  .bookmark-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+}
+
+.future-section__main-card,
+.future-section__side-card,
+.home-category__main-card {
+  position: relative;
+
+  .bookmark-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+}
+
+.bb-article-item.small .bookmark-btn {
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+}
+
+.item-title-wrapper button.bookmark-btn {
+  margin-left: 5px;
+}
 
 .covered-by {
   margin-bottom: 30px;

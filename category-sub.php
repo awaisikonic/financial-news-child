@@ -1,4 +1,5 @@
 <?php
+
 /**
  * The template for displaying Sub Category pages
  *
@@ -16,21 +17,38 @@ $parent_id = $category->term_id;
         <!-- More Industries news   -->
         <div class="more-industrie-main">
             <?php
-            if ( have_posts() ) {
+            if (have_posts()) {
                 // Start the loop.
-                while ( have_posts() ) {
+                while (have_posts()) {
                     the_post();
+
+                    $post_id = get_the_ID();
+                    $user_id = get_current_user_id();
+                    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+                    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+                    $is_bookmarked = in_array($post_id, $saved_articles);
+                    $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+                    $button_text = $is_bookmarked ? 'Saved Article' : 'Bookmark This Article';
+                    $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
 
                     /*
                     * Include the Post-Format-specific template for the content.
                     * If you want to override this in a child theme, then include a file
                     * called content-___.php (where ___ is the Post Format name) and that will be used instead.
                     */
-                    ?>
+            ?>
                     <div class="industrie-news-card">
                         <div>
                             <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
-                            <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h5>
+                            <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></br>
+                                <?php if (is_user_logged_in()) { ?>
+                                    <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                        <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                        <span class="bookmark-text"><?php echo $button_text; ?></span>
+                                    </button>
+                                <?php } ?>
+                            </h5>
                         </div>
                         <a href="<?php the_permalink(); ?>">
                             <?php if (has_post_thumbnail()): ?>
@@ -38,10 +56,10 @@ $parent_id = $category->term_id;
                             <?php endif; ?>
                         </a>
                     </div>
-                    <?php
+            <?php
                 }
             } else {
-                get_template_part( 'loop-templates/content', 'none' );
+                get_template_part('loop-templates/content', 'none');
             }
             understrap_pagination();
             ?>

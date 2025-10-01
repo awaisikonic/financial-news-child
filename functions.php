@@ -1104,3 +1104,216 @@ function load_more_parent_cat_news()
 }
 add_action('wp_ajax_load_more_parent_cat_news', 'load_more_parent_cat_news');
 add_action('wp_ajax_nopriv_load_more_parent_cat_news', 'load_more_parent_cat_news');
+
+// Handle user registration via AJAX
+add_action('wp_ajax_nopriv_user_register', 'handle_user_registration');
+function handle_user_registration()
+{
+    // Verify nonce
+    if (!wp_verify_nonce($_POST['register_nonce'], 'user_register_nonce')) {
+        wp_send_json_error(array('message' => 'Security verification failed.'));
+    }
+
+    // Get form data
+    $username = sanitize_user($_POST['username']);
+    $email = sanitize_email($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+
+    $errors = array();
+
+    // Validate username
+    if (empty($username)) {
+        $errors['username'] = 'Username is required.';
+    } elseif (username_exists($username)) {
+        $errors['username'] = 'Username already exists.';
+    } elseif (!validate_username($username)) {
+        $errors['username'] = 'Invalid username format.';
+    }
+
+    // Validate email
+    if (empty($email)) {
+        $errors['email'] = 'Email is required.';
+    } elseif (!is_email($email)) {
+        $errors['email'] = 'Invalid email address.';
+    } elseif (email_exists($email)) {
+        $errors['email'] = 'Email already exists.';
+    }
+
+    // Validate password
+    if (empty($password)) {
+        $errors['password'] = 'Password is required.';
+    } elseif (strlen($password) < 6) {
+        $errors['password'] = 'Password must be at least 6 characters.';
+    }
+
+    // Validate password confirmation
+    if ($password !== $confirm_password) {
+        $errors['confirm_password'] = 'Passwords do not match.';
+    }
+
+    // If there are errors, return them
+    if (!empty($errors)) {
+        wp_send_json_error(array(
+            'message' => 'Please fix the errors below.',
+            'errors' => $errors
+        ));
+    }
+
+    // Create new user
+    $user_id = wp_create_user($username, $password, $email);
+
+    if (is_wp_error($user_id)) {
+        wp_send_json_error(array('message' => $user_id->get_error_message()));
+    }
+
+    // Update user meta
+    if (!empty($first_name)) {
+        update_user_meta($user_id, 'first_name', $first_name);
+    }
+    if (!empty($last_name)) {
+        update_user_meta($user_id, 'last_name', $last_name);
+    }
+
+    // Add user to BuddyPress group with ID 1
+    add_user_to_buddypress_group($user_id, 1);
+
+    // Log the user in
+    wp_set_current_user($user_id);
+    wp_set_auth_cookie($user_id);
+
+    // Get BuddyPress profile URL
+    $redirect_url = bp_core_get_user_domain($user_id);
+
+    wp_send_json_success(array(
+        'message' => 'Registration successful! Redirecting...',
+        'redirect_url' => $redirect_url
+    ));
+}
+
+// Function to add user to BuddyPress group
+function add_user_to_buddypress_group($user_id, $group_id)
+{
+    // Check if BuddyPress is active and groups component is available
+    if (!function_exists('groups_join_group')) {
+        return false;
+    }
+
+    // Check if the group exists
+    $group = groups_get_group($group_id);
+    if (empty($group->id)) {
+        return false;
+    }
+
+    // Add user to the group
+    $result = groups_join_group($group_id, $user_id);
+
+    return $result;
+}
+
+// Handle user login via AJAX
+add_action('wp_ajax_nopriv_user_login', 'handle_user_login');
+function handle_user_login()
+{
+    // Verify nonce
+    if (!wp_verify_nonce($_POST['login_nonce'], 'user_login_nonce')) {
+        wp_send_json_error(array('message' => 'Security verification failed.'));
+    }
+
+    // Get form data
+    $username = sanitize_user($_POST['username']);
+    $password = $_POST['password'];
+    $rememberme = isset($_POST['rememberme']) ? true : false;
+
+    $errors = array();
+
+    // Validate credentials
+    if (empty($username)) {
+        $errors['username'] = 'Username or email is required.';
+    }
+
+    if (empty($password)) {
+        $errors['password'] = 'Password is required.';
+    }
+
+    // If there are errors, return them
+    if (!empty($errors)) {
+        wp_send_json_error(array(
+            'message' => 'Please fix the errors below.',
+            'errors' => $errors
+        ));
+    }
+
+    // Attempt login
+    $creds = array(
+        'user_login'    => $username,
+        'user_password' => $password,
+        'remember'      => $rememberme
+    );
+
+    $user = wp_signon($creds, false);
+
+    if (is_wp_error($user)) {
+        $error_message = 'Invalid username or password.';
+        if ($user->get_error_code() === 'incorrect_password') {
+            $errors['password'] = 'Incorrect password.';
+        }
+        wp_send_json_error(array(
+            'message' => $error_message,
+            'errors' => $errors
+        ));
+    }
+
+    // Get BuddyPress profile URL
+    $redirect_url = bp_core_get_user_domain($user->ID);
+
+    wp_send_json_success(array(
+        'message' => 'Login successful! Redirecting...',
+        'redirect_url' => $redirect_url
+    ));
+}
+
+add_filter('show_admin_bar', 'control_admin_bar_visibility');
+function control_admin_bar_visibility($show)
+{
+    // If user is not logged in, definitely hide admin bar
+    if (!is_user_logged_in()) {
+        return false;
+    }
+
+    // If user is logged in but not administrator, hide admin bar
+    if (is_user_logged_in()) {
+        $user = wp_get_current_user();
+        if (!in_array('administrator', (array) $user->roles)) {
+            return false;
+        }
+    }
+
+    return $show;
+}
+
+// Add direct logout tab to BuddyPress profile navigation
+add_action('bp_setup_nav', 'add_direct_logout_tab_to_buddypress_profile', 100);
+function add_direct_logout_tab_to_buddypress_profile()
+{
+    global $bp;
+
+    bp_core_new_nav_item(array(
+        'name' => __('Logout', 'buddypress'),
+        'slug' => 'logout',
+        'position' => 100,
+        'screen_function' => 'direct_logout_tab_screen',
+        'default_subnav_slug' => 'logout',
+        'show_for_displayed_user' => false, // Only show for current user
+    ));
+}
+
+// Direct logout - immediately log out when tab is clicked
+function direct_logout_tab_screen()
+{
+    wp_logout();
+    wp_redirect(home_url());
+    exit;
+}

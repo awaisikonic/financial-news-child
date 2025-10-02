@@ -23,6 +23,7 @@ $parent_id = $category->term_id;
                     the_post();
 
                     $post_id = get_the_ID();
+                    $likes_count = wp_ulike_get_post_likes($post_id);
                     $user_id = get_current_user_id();
                     $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                     $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -41,20 +42,22 @@ $parent_id = $category->term_id;
                     <div class="industrie-news-card">
                         <div>
                             <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
-                            <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></br>
-                                <?php if (is_user_logged_in()) { ?>
-                                    <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
-                                        <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
-                                        <span class="bookmark-text"><?php echo $button_text; ?></span>
-                                    </button>
-                                <?php } ?>
-                            </h5>
+                            <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h5>
                         </div>
                         <a href="<?php the_permalink(); ?>">
                             <?php if (has_post_thumbnail()): ?>
                                 <img src="<?php the_post_thumbnail_url('full'); ?>" alt="<?php the_title(); ?>">
                             <?php endif; ?>
                         </a>
+                        <div class="post-bottom-wraper">
+                            <?php if (is_user_logged_in()) { ?>
+                                <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                    <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                    <span class="bookmark-text"><?php echo $button_text; ?></span>
+                                </button>
+                            <?php } ?>
+                            <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
+                        </div>
                     </div>
             <?php
                 }

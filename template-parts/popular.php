@@ -11,6 +11,7 @@ if ($popular_posts->have_posts()) : ?>
     <div class="articles-grid">
         <?php while ($popular_posts->have_posts()) : $popular_posts->the_post();
             $post_id = get_the_ID();
+            $likes_count = wp_ulike_get_post_likes($post_id);
             $user_id = get_current_user_id();
             $saved_articles = get_user_meta($user_id, 'saved_articles', true);
             $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -39,6 +40,7 @@ if ($popular_posts->have_posts()) : ?>
                         <?php } ?>
                     </a>
                 <?php endif; ?>
+                <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                 <h3><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3>
                 <p>by <?php the_author(); ?></p>
             </article>

@@ -1086,6 +1086,7 @@ function load_more_parent_cat_news()
     if ($more_news_query->have_posts()):
         while ($more_news_query->have_posts()): $more_news_query->the_post();
             $post_id = get_the_ID();
+            $likes_count = wp_ulike_get_post_likes($post_id);
             $user_id = get_current_user_id();
             $saved_articles = get_user_meta($user_id, 'saved_articles', true);
             $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -1104,12 +1105,15 @@ function load_more_parent_cat_news()
                 <?php if (has_post_thumbnail()): ?>
                     <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
                 <?php endif; ?>
-                <?php if (is_user_logged_in()) { ?>
-                    <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
-                        <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
-                        <span class="bookmark-text"><?php echo $button_text; ?></span>
-                    </button>
-                <?php } ?>
+                <div class="post-bottom-wraper">
+                    <?php if (is_user_logged_in()) { ?>
+                        <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                            <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                            <span class="bookmark-text"><?php echo $button_text; ?></span>
+                        </button>
+                    <?php } ?>
+                    <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
+                </div>
             </div>
         <?php endwhile;
         wp_reset_postdata();
@@ -1543,5 +1547,24 @@ function saved_articles_content()
             }
         }
     </style>
-<?php
+    <?php
 }
+
+// Change comments title
+function replace_comments_title_js()
+{
+    if (is_single() && comments_open()) {
+    ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var commentsTitle = document.querySelector('.comments-title, .comment-reply-title');
+                if (commentsTitle) {
+                    var commentsCount = '<?php echo get_comments_number(); ?>';
+                    commentsTitle.innerHTML = 'Reviews (' + commentsCount + ')';
+                }
+            });
+        </script>
+<?php
+    }
+}
+add_action('wp_footer', 'replace_comments_title_js');

@@ -32,6 +32,7 @@ $container = get_theme_mod('understrap_container_type');
 		while (have_posts()) :
 			the_post();
 			$post_id = get_the_ID();
+			$likes_count = wp_ulike_get_post_likes($post_id);
 			$user_id = get_current_user_id();
 			$saved_articles = get_user_meta($user_id, 'saved_articles', true);
 			$saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -86,11 +87,13 @@ $container = get_theme_mod('understrap_container_type');
 									<span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
 								</button>
 							<?php } ?>
+
 						</h3>
 					</div>
 					<p class="search-result-item-desc"><?php echo wp_trim_words(get_the_excerpt(), 40, '...'); ?></p>
 					<div class="search-result-item-info">
 						<span class="search-result-item-date"><?php echo get_the_date('F j, Y'); ?></span>
+						<p class="count-wrapper count-inline-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
 					</div>
 				</div>
 			</a>

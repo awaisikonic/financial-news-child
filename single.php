@@ -115,7 +115,12 @@ $container = get_theme_mod('understrap_container_type');
     </div>
     <div class="article-grid main-content-with-audio">
       <div class="article-grid-inner-grid main-content-with-audio">
-        <div></div>
+        <div class="article-heading-left poll-section">
+          <?php if (function_exists('vote_poll')): ?>
+            <h3>Polls</h3>
+            <?php get_poll(); ?>
+          <?php endif; ?>
+        </div>
         <div class="artical-main-content">
           <?php
           $post_temp_content = get_field('post_temp_content', get_the_ID());
@@ -153,6 +158,16 @@ $container = get_theme_mod('understrap_container_type');
   }
   ?>
 </section>
+<?php if (is_user_logged_in()) { ?>
+  <section class="comments-section">
+    <?php
+    // Display comments template
+    if (comments_open() || get_comments_number()) {
+      comments_template();
+    }
+    ?>
+  </section>
+<?php } ?>
 <section class="related-articles">
 
   <div class="top-reads covered-by">
@@ -290,5 +305,6 @@ $container = get_theme_mod('understrap_container_type');
     margin: 50px 0 20px;
   }
 </style>
+
 <?php
 get_footer();

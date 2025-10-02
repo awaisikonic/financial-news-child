@@ -49,6 +49,7 @@ if ($select_category) {
             <?php if ($category_posts->have_posts()) : ?>
                 <?php while ($category_posts->have_posts()) : $category_posts->the_post();
                     $post_id = get_the_ID();
+                    $likes_count = wp_ulike_get_post_likes($post_id);
                     $user_id = get_current_user_id();
                     $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                     $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -74,6 +75,7 @@ if ($select_category) {
                                     </button>
                                 <?php } ?>
                             <?php endif; ?>
+                            <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                             <h3><?php the_title(); ?></h3>
                         </a>
                     </div>

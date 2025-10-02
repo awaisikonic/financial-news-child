@@ -11,6 +11,7 @@ $select_posts = get_sub_field('select_posts');
 
                 <?php foreach ($select_posts as $post): setup_postdata($post);
                     $post_id = get_the_ID();
+                    $likes_count = wp_ulike_get_post_likes($post_id);
                     $user_id = get_current_user_id();
                     $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                     $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -32,6 +33,7 @@ $select_posts = get_sub_field('select_posts');
                                     <?php } ?>
                                 <?php endif; ?>
                                 <div class="future-section__card-content">
+                                    <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                                     <h2 class="future-section__main-title"><?php the_title(); ?></h2>
                                     <p class="future-section__main-desc"><?php echo wp_trim_words(get_the_excerpt(), 50, '...'); ?></p>
                                 </div>
@@ -52,6 +54,7 @@ $select_posts = get_sub_field('select_posts');
                                         <?php } ?>
                                     <?php endif; ?>
                                     <div class="future-section__card-content">
+                                        <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                                         <h3 class="future-section__side-title"><?php the_title(); ?></h3>
                                     </div>
                                 </article>

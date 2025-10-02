@@ -48,6 +48,7 @@ $main_posts = [];
                     $main_posts[] = get_the_ID();
 
                     $post_id = get_the_ID();
+                    $likes_count = wp_ulike_get_post_likes($post_id);
                     $user_id = get_current_user_id();
                     $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                     $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -66,6 +67,7 @@ $main_posts = [];
                                     </button>
                                 <?php } ?>
                             <?php endif; ?>
+                            <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                             <h2><?php the_title(); ?></h2>
                         </a>
                     </article>
@@ -86,6 +88,7 @@ $main_posts = [];
                         $main_posts[] = get_the_ID();
 
                         $post_id = get_the_ID();
+                        $likes_count = wp_ulike_get_post_likes($post_id);
                         $user_id = get_current_user_id();
                         $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                         $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -103,6 +106,7 @@ $main_posts = [];
                                     </button>
                                 <?php } ?>
                             <?php endif; ?>
+                            <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                             <h3><?php the_title(); ?></h3>
                         </a>
                     <?php endwhile;
@@ -130,6 +134,7 @@ $main_posts = [];
                     $main_posts[] = get_the_ID();
 
                     $post_id = get_the_ID();
+                    $likes_count = wp_ulike_get_post_likes($post_id);
                     $user_id = get_current_user_id();
                     $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                     $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -147,6 +152,7 @@ $main_posts = [];
                                 </button>
                             <?php } ?>
                         <?php endif; ?>
+                        <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                         <h3><?php the_title(); ?></h3>
                     </a>
                 <?php endwhile;
@@ -176,6 +182,7 @@ if ($more_news_query->have_posts()) {
                 <?php
                 while ($more_news_query->have_posts()): $more_news_query->the_post();
                     $post_id = get_the_ID();
+                    $likes_count = wp_ulike_get_post_likes($post_id);
                     $user_id = get_current_user_id();
                     $saved_articles = get_user_meta($user_id, 'saved_articles', true);
                     $saved_articles = !empty($saved_articles) ? $saved_articles : array();
@@ -194,12 +201,15 @@ if ($more_news_query->have_posts()) {
                         <?php if (has_post_thumbnail()): ?>
                             <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
                         <?php endif; ?>
-                        <?php if (is_user_logged_in()) { ?>
-                            <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
-                                <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
-                                <span class="bookmark-text"><?php echo $button_text; ?></span>
-                            </button>
-                        <?php } ?>
+                        <div class="post-bottom-wraper">
+                            <?php if (is_user_logged_in()) { ?>
+                                <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                                    <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                                    <span class="bookmark-text"><?php echo $button_text; ?></span>
+                                </button>
+                            <?php } ?>
+                            <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
+                        </div>
                     </div>
                 <?php endwhile;
                 wp_reset_postdata(); ?>

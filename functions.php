@@ -1115,7 +1115,7 @@ function load_more_parent_cat_news()
                     <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
                 </div>
             </div>
-        <?php endwhile;
+    <?php endwhile;
         wp_reset_postdata();
     else:
         echo 'no_more_posts';
@@ -1126,6 +1126,171 @@ function load_more_parent_cat_news()
 add_action('wp_ajax_load_more_parent_cat_news', 'load_more_parent_cat_news');
 add_action('wp_ajax_nopriv_load_more_parent_cat_news', 'load_more_parent_cat_news');
 
+// Add reCAPTCHA settings page
+add_action('admin_menu', 'add_recaptcha_settings_page');
+function add_recaptcha_settings_page()
+{
+    add_options_page(
+        'reCAPTCHA Settings',
+        'reCAPTCHA Settings',
+        'manage_options',
+        'recaptcha-settings',
+        'recaptcha_settings_page_html'
+    );
+}
+
+// Register reCAPTCHA settings
+add_action('admin_init', 'register_recaptcha_settings');
+function register_recaptcha_settings()
+{
+    register_setting('recaptcha_settings', 'recaptcha_site_key');
+    register_setting('recaptcha_settings', 'recaptcha_secret_key');
+}
+
+// reCAPTCHA settings page HTML
+function recaptcha_settings_page_html()
+{
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    ?>
+    <div class="wrap">
+        <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+        <form action="options.php" method="post">
+            <?php
+            settings_fields('recaptcha_settings');
+            do_settings_sections('recaptcha_settings');
+            ?>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="recaptcha_site_key">reCAPTCHA Site Key</label>
+                    </th>
+                    <td>
+                        <input type="text"
+                            id="recaptcha_site_key"
+                            name="recaptcha_site_key"
+                            value="<?php echo esc_attr(get_option('recaptcha_site_key')); ?>"
+                            class="regular-text" />
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="recaptcha_secret_key">reCAPTCHA Secret Key</label>
+                    </th>
+                    <td>
+                        <input type="text"
+                            id="recaptcha_secret_key"
+                            name="recaptcha_secret_key"
+                            value="<?php echo esc_attr(get_option('recaptcha_secret_key')); ?>"
+                            class="regular-text" />
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button(); ?>
+        </form>
+    </div>
+    <?php
+}
+
+// Verify reCAPTCHA token
+function verify_recaptcha_token($token)
+{
+    $secret_key = get_option('recaptcha_secret_key');
+
+    if (empty($secret_key)) {
+        return array('success' => false, 'error' => 'reCAPTCHA secret key not configured');
+    }
+
+    $response = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', array(
+        'body' => array(
+            'secret' => $secret_key,
+            'response' => $token
+        )
+    ));
+
+    if (is_wp_error($response)) {
+        return array('success' => false, 'error' => 'Failed to verify reCAPTCHA');
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $result = json_decode($body, true);
+
+    return $result;
+}
+
+// Handle user login via AJAX
+add_action('wp_ajax_nopriv_user_login', 'handle_user_login');
+function handle_user_login()
+{
+    // Verify nonce
+    if (!wp_verify_nonce($_POST['login_nonce'], 'user_login_nonce')) {
+        wp_send_json_error(array('message' => 'Security verification failed.'));
+    }
+
+    // Verify reCAPTCHA
+    $recaptcha_secret_key = get_option('recaptcha_secret_key');
+    if (!empty($recaptcha_secret_key)) {
+        $recaptcha_response = verify_recaptcha_token($_POST['recaptcha_token']);
+
+        if (!$recaptcha_response['success'] || $recaptcha_response['score'] < 0.5) {
+            wp_send_json_error(array('message' => 'reCAPTCHA verification failed. Please try again.'));
+        }
+    }
+
+    // Get form data
+    $username = sanitize_user($_POST['username']);
+    $password = $_POST['password'];
+    $rememberme = isset($_POST['rememberme']) ? true : false;
+
+    $errors = array();
+
+    // Validate credentials
+    if (empty($username)) {
+        $errors['username'] = 'Username or email is required.';
+    }
+
+    if (empty($password)) {
+        $errors['password'] = 'Password is required.';
+    }
+
+    // If there are errors, return them
+    if (!empty($errors)) {
+        wp_send_json_error(array(
+            'message' => 'Please fix the errors below.',
+            'errors' => $errors
+        ));
+    }
+
+    // Attempt login
+    $creds = array(
+        'user_login'    => $username,
+        'user_password' => $password,
+        'remember'      => $rememberme
+    );
+
+    $user = wp_signon($creds, false);
+
+    if (is_wp_error($user)) {
+        $error_message = 'Invalid username or password.';
+        if ($user->get_error_code() === 'incorrect_password') {
+            $errors['password'] = 'Incorrect password.';
+        }
+        wp_send_json_error(array(
+            'message' => $error_message,
+            'errors' => $errors
+        ));
+    }
+
+    // Get BuddyPress profile URL
+    $redirect_url = bp_core_get_user_domain($user->ID);
+
+    wp_send_json_success(array(
+        'message' => 'Login successful! Redirecting...',
+        'redirect_url' => $redirect_url
+    ));
+}
+
 // Handle user registration via AJAX
 add_action('wp_ajax_nopriv_user_register', 'handle_user_registration');
 function handle_user_registration()
@@ -1133,6 +1298,16 @@ function handle_user_registration()
     // Verify nonce
     if (!wp_verify_nonce($_POST['register_nonce'], 'user_register_nonce')) {
         wp_send_json_error(array('message' => 'Security verification failed.'));
+    }
+
+    // Verify reCAPTCHA
+    $recaptcha_secret_key = get_option('recaptcha_secret_key');
+    if (!empty($recaptcha_secret_key)) {
+        $recaptcha_response = verify_recaptcha_token($_POST['recaptcha_token']);
+
+        if (!$recaptcha_response['success'] || $recaptcha_response['score'] < 0.5) {
+            wp_send_json_error(array('message' => 'reCAPTCHA verification failed. Please try again.'));
+        }
     }
 
     // Get form data
@@ -1232,68 +1407,6 @@ function add_user_to_buddypress_group($user_id, $group_id)
     $result = groups_join_group($group_id, $user_id);
 
     return $result;
-}
-
-// Handle user login via AJAX
-add_action('wp_ajax_nopriv_user_login', 'handle_user_login');
-function handle_user_login()
-{
-    // Verify nonce
-    if (!wp_verify_nonce($_POST['login_nonce'], 'user_login_nonce')) {
-        wp_send_json_error(array('message' => 'Security verification failed.'));
-    }
-
-    // Get form data
-    $username = sanitize_user($_POST['username']);
-    $password = $_POST['password'];
-    $rememberme = isset($_POST['rememberme']) ? true : false;
-
-    $errors = array();
-
-    // Validate credentials
-    if (empty($username)) {
-        $errors['username'] = 'Username or email is required.';
-    }
-
-    if (empty($password)) {
-        $errors['password'] = 'Password is required.';
-    }
-
-    // If there are errors, return them
-    if (!empty($errors)) {
-        wp_send_json_error(array(
-            'message' => 'Please fix the errors below.',
-            'errors' => $errors
-        ));
-    }
-
-    // Attempt login
-    $creds = array(
-        'user_login'    => $username,
-        'user_password' => $password,
-        'remember'      => $rememberme
-    );
-
-    $user = wp_signon($creds, false);
-
-    if (is_wp_error($user)) {
-        $error_message = 'Invalid username or password.';
-        if ($user->get_error_code() === 'incorrect_password') {
-            $errors['password'] = 'Incorrect password.';
-        }
-        wp_send_json_error(array(
-            'message' => $error_message,
-            'errors' => $errors
-        ));
-    }
-
-    // Get BuddyPress profile URL
-    $redirect_url = bp_core_get_user_domain($user->ID);
-
-    wp_send_json_success(array(
-        'message' => 'Login successful! Redirecting...',
-        'redirect_url' => $redirect_url
-    ));
 }
 
 add_filter('show_admin_bar', 'control_admin_bar_visibility');
@@ -1443,7 +1556,7 @@ function saved_articles_content()
 
     while ($saved_posts->have_posts()) {
         $saved_posts->the_post();
-        ?>
+    ?>
         <div class="saved-article-item">
             <div class="saved-article-image">
                 <?php if (has_post_thumbnail()) : ?>

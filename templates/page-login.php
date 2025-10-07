@@ -9,6 +9,8 @@ if (is_user_logged_in()) {
     exit;
 }
 
+$recaptcha_site_key = get_option('recaptcha_site_key');
+
 get_header(); ?>
 
 <div class="auth-container">
@@ -42,7 +44,8 @@ get_header(); ?>
             <?php wp_nonce_field('user_login_nonce', 'login_nonce'); ?>
 
             <div class="form-submit">
-                <button type="submit" id="login-submit" class="auth-button">
+                <button type="submit" id="login-submit" class="auth-button"
+                    data-sitekey="<?php echo esc_attr($recaptcha_site_key); ?>">
                     <span class="button-text">Sign In</span>
                     <span class="loading-spinner" style="display: none;"></span>
                 </button>
@@ -57,7 +60,13 @@ get_header(); ?>
     </div>
 </div>
 
+<!-- Include reCAPTCHA API -->
+<?php if (!empty($recaptcha_site_key)): ?>
+    <script src="https://www.google.com/recaptcha/api.js?render=<?php echo esc_attr($recaptcha_site_key); ?>"></script>
+<?php endif; ?>
+
 <style>
+    /* Your existing CSS styles remain the same */
     .auth-container {
         min-height: 100vh;
         display: flex;
@@ -234,6 +243,8 @@ get_header(); ?>
 
 <script>
     jQuery(document).ready(function($) {
+        var recaptchaSiteKey = '<?php echo esc_js($recaptcha_site_key); ?>';
+
         $('#user-login-form').on('submit', function(e) {
             e.preventDefault();
 
@@ -253,47 +264,63 @@ get_header(); ?>
             $loadingSpinner.show();
             $submitBtn.prop('disabled', true);
 
-            // Prepare form data
-            var formData = {
-                action: 'user_login',
-                username: $('#login-username').val(),
-                password: $('#login-password').val(),
-                rememberme: $('input[name="rememberme"]').is(':checked') ? 'forever' : '',
-                login_nonce: $('#login_nonce').val()
-            };
+            // Execute reCAPTCHA
+            if (recaptchaSiteKey) {
+                grecaptcha.ready(function() {
+                    grecaptcha.execute(recaptchaSiteKey, {
+                        action: 'login'
+                    }).then(function(token) {
+                        submitLoginForm(token);
+                    });
+                });
+            } else {
+                submitLoginForm('');
+            }
 
-            $.ajax({
-                type: 'POST',
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                data: formData,
-                success: function(response) {
-                    if (response.success) {
-                        $messages.html('<div class="success-message">' + response.data.message + '</div>');
+            function submitLoginForm(recaptchaToken) {
+                // Prepare form data
+                var formData = {
+                    action: 'user_login',
+                    username: $('#login-username').val(),
+                    password: $('#login-password').val(),
+                    rememberme: $('input[name="rememberme"]').is(':checked') ? 'forever' : '',
+                    login_nonce: $('#login_nonce').val(),
+                    recaptcha_token: recaptchaToken
+                };
 
-                        // Redirect to BuddyPress profile after 1 second
-                        setTimeout(function() {
-                            window.location.href = response.data.redirect_url;
-                        }, 1000);
-                    } else {
-                        if (response.data.errors) {
-                            // Display field-specific errors
-                            $.each(response.data.errors, function(field, error) {
-                                $('#' + field + '-error').text(error);
-                                $('#' + field).addClass('error');
-                            });
+                $.ajax({
+                    type: 'POST',
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            $messages.html('<div class="success-message">' + response.data.message + '</div>');
+
+                            // Redirect to BuddyPress profile after 1 second
+                            setTimeout(function() {
+                                window.location.href = response.data.redirect_url;
+                            }, 1000);
+                        } else {
+                            if (response.data.errors) {
+                                // Display field-specific errors
+                                $.each(response.data.errors, function(field, error) {
+                                    $('#' + field + '-error').text(error);
+                                    $('#' + field).addClass('error');
+                                });
+                            }
+                            $messages.html('<div class="error-message-global">' + response.data.message + '</div>');
                         }
-                        $messages.html('<div class="error-message-global">' + response.data.message + '</div>');
+                    },
+                    error: function() {
+                        $messages.html('<div class="error-message-global">An error occurred. Please try again.</div>');
+                    },
+                    complete: function() {
+                        $buttonText.show();
+                        $loadingSpinner.hide();
+                        $submitBtn.prop('disabled', false);
                     }
-                },
-                error: function() {
-                    $messages.html('<div class="error-message-global">An error occurred. Please try again.</div>');
-                },
-                complete: function() {
-                    $buttonText.show();
-                    $loadingSpinner.hide();
-                    $submitBtn.prop('disabled', false);
-                }
-            });
+                });
+            }
         });
     });
 </script>

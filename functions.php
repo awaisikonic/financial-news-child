@@ -1084,17 +1084,38 @@ function load_more_parent_cat_news()
     ]);
 
     if ($more_news_query->have_posts()):
-        while ($more_news_query->have_posts()): $more_news_query->the_post(); ?>
+        while ($more_news_query->have_posts()): $more_news_query->the_post();
+            $post_id = get_the_ID();
+            $likes_count = wp_ulike_get_post_likes($post_id);
+            $user_id = get_current_user_id();
+            $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+            $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+            $is_bookmarked = in_array($post_id, $saved_articles);
+            $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+            $button_text = $is_bookmarked ? 'Saved Article' : 'Bookmark This Article';
+            $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
+        ?>
             <div class="industrie-news-card">
                 <div>
                     <p><?php echo human_time_diff(get_the_time('U'), current_time('timestamp')) . ' ago'; ?></p>
-                    <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h5>
+                    <h5><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                    </h5>
                 </div>
                 <?php if (has_post_thumbnail()): ?>
                     <img src="<?php the_post_thumbnail_url('medium'); ?>" alt="<?php the_title(); ?>">
                 <?php endif; ?>
+                <div class="post-bottom-wraper">
+                    <?php if (is_user_logged_in()) { ?>
+                        <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                            <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                            <span class="bookmark-text"><?php echo $button_text; ?></span>
+                        </button>
+                    <?php } ?>
+                    <p class="count-wrapper"><i class="fa-solid fa-thumbs-up"></i><span class="like-count"><?php echo $likes_count; ?></span></p>
+                </div>
             </div>
-<?php endwhile;
+    <?php endwhile;
         wp_reset_postdata();
     else:
         echo 'no_more_posts';
@@ -1104,3 +1125,559 @@ function load_more_parent_cat_news()
 }
 add_action('wp_ajax_load_more_parent_cat_news', 'load_more_parent_cat_news');
 add_action('wp_ajax_nopriv_load_more_parent_cat_news', 'load_more_parent_cat_news');
+
+// Add reCAPTCHA settings page
+add_action('admin_menu', 'add_recaptcha_settings_page');
+function add_recaptcha_settings_page()
+{
+    add_options_page(
+        'reCAPTCHA Settings',
+        'reCAPTCHA Settings',
+        'manage_options',
+        'recaptcha-settings',
+        'recaptcha_settings_page_html'
+    );
+}
+
+// Register reCAPTCHA settings
+add_action('admin_init', 'register_recaptcha_settings');
+function register_recaptcha_settings()
+{
+    register_setting('recaptcha_settings', 'recaptcha_site_key');
+    register_setting('recaptcha_settings', 'recaptcha_secret_key');
+}
+
+// reCAPTCHA settings page HTML
+function recaptcha_settings_page_html()
+{
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    ?>
+    <div class="wrap">
+        <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+        <form action="options.php" method="post">
+            <?php
+            settings_fields('recaptcha_settings');
+            do_settings_sections('recaptcha_settings');
+            ?>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="recaptcha_site_key">reCAPTCHA Site Key</label>
+                    </th>
+                    <td>
+                        <input type="text"
+                            id="recaptcha_site_key"
+                            name="recaptcha_site_key"
+                            value="<?php echo esc_attr(get_option('recaptcha_site_key')); ?>"
+                            class="regular-text" />
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="recaptcha_secret_key">reCAPTCHA Secret Key</label>
+                    </th>
+                    <td>
+                        <input type="text"
+                            id="recaptcha_secret_key"
+                            name="recaptcha_secret_key"
+                            value="<?php echo esc_attr(get_option('recaptcha_secret_key')); ?>"
+                            class="regular-text" />
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button(); ?>
+        </form>
+    </div>
+    <?php
+}
+
+// Verify reCAPTCHA token
+function verify_recaptcha_token($token)
+{
+    $secret_key = get_option('recaptcha_secret_key');
+
+    if (empty($secret_key)) {
+        return array('success' => false, 'error' => 'reCAPTCHA secret key not configured');
+    }
+
+    $response = wp_remote_post('https://www.google.com/recaptcha/api/siteverify', array(
+        'body' => array(
+            'secret' => $secret_key,
+            'response' => $token
+        )
+    ));
+
+    if (is_wp_error($response)) {
+        return array('success' => false, 'error' => 'Failed to verify reCAPTCHA');
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $result = json_decode($body, true);
+
+    return $result;
+}
+
+// Handle user login via AJAX
+add_action('wp_ajax_nopriv_user_login', 'handle_user_login');
+function handle_user_login()
+{
+    // Verify nonce
+    if (!wp_verify_nonce($_POST['login_nonce'], 'user_login_nonce')) {
+        wp_send_json_error(array('message' => 'Security verification failed.'));
+    }
+
+    // Verify reCAPTCHA
+    $recaptcha_secret_key = get_option('recaptcha_secret_key');
+    if (!empty($recaptcha_secret_key)) {
+        $recaptcha_response = verify_recaptcha_token($_POST['recaptcha_token']);
+
+        if (!$recaptcha_response['success'] || $recaptcha_response['score'] < 0.5) {
+            wp_send_json_error(array('message' => 'reCAPTCHA verification failed. Please try again.'));
+        }
+    }
+
+    // Get form data
+    $username = sanitize_user($_POST['username']);
+    $password = $_POST['password'];
+    $rememberme = isset($_POST['rememberme']) ? true : false;
+
+    $errors = array();
+
+    // Validate credentials
+    if (empty($username)) {
+        $errors['username'] = 'Username or email is required.';
+    }
+
+    if (empty($password)) {
+        $errors['password'] = 'Password is required.';
+    }
+
+    // If there are errors, return them
+    if (!empty($errors)) {
+        wp_send_json_error(array(
+            'message' => 'Please fix the errors below.',
+            'errors' => $errors
+        ));
+    }
+
+    // Attempt login
+    $creds = array(
+        'user_login'    => $username,
+        'user_password' => $password,
+        'remember'      => $rememberme
+    );
+
+    $user = wp_signon($creds, false);
+
+    if (is_wp_error($user)) {
+        $error_message = 'Invalid username or password.';
+        if ($user->get_error_code() === 'incorrect_password') {
+            $errors['password'] = 'Incorrect password.';
+        }
+        wp_send_json_error(array(
+            'message' => $error_message,
+            'errors' => $errors
+        ));
+    }
+
+    // Get BuddyPress profile URL
+    $redirect_url = bp_core_get_user_domain($user->ID);
+
+    wp_send_json_success(array(
+        'message' => 'Login successful! Redirecting...',
+        'redirect_url' => $redirect_url
+    ));
+}
+
+// Handle user registration via AJAX
+add_action('wp_ajax_nopriv_user_register', 'handle_user_registration');
+function handle_user_registration()
+{
+    // Verify nonce
+    if (!wp_verify_nonce($_POST['register_nonce'], 'user_register_nonce')) {
+        wp_send_json_error(array('message' => 'Security verification failed.'));
+    }
+
+    // Verify reCAPTCHA
+    $recaptcha_secret_key = get_option('recaptcha_secret_key');
+    if (!empty($recaptcha_secret_key)) {
+        $recaptcha_response = verify_recaptcha_token($_POST['recaptcha_token']);
+
+        if (!$recaptcha_response['success'] || $recaptcha_response['score'] < 0.5) {
+            wp_send_json_error(array('message' => 'reCAPTCHA verification failed. Please try again.'));
+        }
+    }
+
+    // Get form data
+    $username = sanitize_user($_POST['username']);
+    $email = sanitize_email($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    $first_name = sanitize_text_field($_POST['first_name']);
+    $last_name = sanitize_text_field($_POST['last_name']);
+
+    $errors = array();
+
+    // Validate username
+    if (empty($username)) {
+        $errors['username'] = 'Username is required.';
+    } elseif (username_exists($username)) {
+        $errors['username'] = 'Username already exists.';
+    } elseif (!validate_username($username)) {
+        $errors['username'] = 'Invalid username format.';
+    }
+
+    // Validate email
+    if (empty($email)) {
+        $errors['email'] = 'Email is required.';
+    } elseif (!is_email($email)) {
+        $errors['email'] = 'Invalid email address.';
+    } elseif (email_exists($email)) {
+        $errors['email'] = 'Email already exists.';
+    }
+
+    // Validate password
+    if (empty($password)) {
+        $errors['password'] = 'Password is required.';
+    } elseif (strlen($password) < 6) {
+        $errors['password'] = 'Password must be at least 6 characters.';
+    }
+
+    // Validate password confirmation
+    if ($password !== $confirm_password) {
+        $errors['confirm_password'] = 'Passwords do not match.';
+    }
+
+    // If there are errors, return them
+    if (!empty($errors)) {
+        wp_send_json_error(array(
+            'message' => 'Please fix the errors below.',
+            'errors' => $errors
+        ));
+    }
+
+    // Create new user
+    $user_id = wp_create_user($username, $password, $email);
+
+    if (is_wp_error($user_id)) {
+        wp_send_json_error(array('message' => $user_id->get_error_message()));
+    }
+
+    // Update user meta
+    if (!empty($first_name)) {
+        update_user_meta($user_id, 'first_name', $first_name);
+    }
+    if (!empty($last_name)) {
+        update_user_meta($user_id, 'last_name', $last_name);
+    }
+
+    // Add user to BuddyPress group with ID 1
+    add_user_to_buddypress_group($user_id, 1);
+
+    // Log the user in
+    wp_set_current_user($user_id);
+    wp_set_auth_cookie($user_id);
+
+    // Get BuddyPress profile URL
+    $redirect_url = bp_core_get_user_domain($user_id);
+
+    wp_send_json_success(array(
+        'message' => 'Registration successful! Redirecting...',
+        'redirect_url' => $redirect_url
+    ));
+}
+
+// Function to add user to BuddyPress group
+function add_user_to_buddypress_group($user_id, $group_id)
+{
+    // Check if BuddyPress is active and groups component is available
+    if (!function_exists('groups_join_group')) {
+        return false;
+    }
+
+    // Check if the group exists
+    $group = groups_get_group($group_id);
+    if (empty($group->id)) {
+        return false;
+    }
+
+    // Add user to the group
+    $result = groups_join_group($group_id, $user_id);
+
+    return $result;
+}
+
+add_filter('show_admin_bar', 'control_admin_bar_visibility');
+function control_admin_bar_visibility($show)
+{
+    // If user is not logged in, definitely hide admin bar
+    if (!is_user_logged_in()) {
+        return false;
+    }
+
+    // If user is logged in but not administrator, hide admin bar
+    if (is_user_logged_in()) {
+        $user = wp_get_current_user();
+        if (!in_array('administrator', (array) $user->roles)) {
+            return false;
+        }
+    }
+
+    return $show;
+}
+
+// Add direct logout tab to BuddyPress profile navigation
+add_action('bp_setup_nav', 'add_direct_logout_tab_to_buddypress_profile', 100);
+function add_direct_logout_tab_to_buddypress_profile()
+{
+    global $bp;
+
+    bp_core_new_nav_item(array(
+        'name' => __('Logout', 'buddypress'),
+        'slug' => 'logout',
+        'position' => 100,
+        'screen_function' => 'direct_logout_tab_screen',
+        'default_subnav_slug' => 'logout',
+        'show_for_displayed_user' => false, // Only show for current user
+    ));
+}
+
+// Direct logout - immediately log out when tab is clicked
+function direct_logout_tab_screen()
+{
+    wp_logout();
+    wp_redirect(home_url());
+    exit;
+}
+
+// AJAX handler for bookmarking
+function toggle_bookmark()
+{
+    if (!is_user_logged_in()) {
+        wp_die('You must be logged in to bookmark articles.');
+    }
+
+    $post_id = intval($_POST['post_id']);
+    $user_id = get_current_user_id();
+
+    if (!$post_id) {
+        wp_die('Invalid post ID.');
+    }
+
+    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+    // Check if post is already bookmarked
+    $key = array_search($post_id, $saved_articles);
+
+    if ($key !== false) {
+        // Remove from bookmarks
+        unset($saved_articles[$key]);
+        $saved_articles = array_values($saved_articles); // Reindex array
+        $action = 'removed';
+        $message = 'Article removed from bookmarks';
+    } else {
+        // Add to bookmarks
+        $saved_articles[] = $post_id;
+        $action = 'added';
+        $message = 'Article added to bookmarks';
+    }
+
+    update_user_meta($user_id, 'saved_articles', $saved_articles);
+
+    wp_send_json_success(array(
+        'action' => $action,
+        'message' => $message,
+        'count' => count($saved_articles)
+    ));
+}
+add_action('wp_ajax_toggle_bookmark', 'toggle_bookmark');
+
+// Add Saved Articles tab to BuddyPress profile
+function add_saved_articles_bp_tab()
+{
+    global $bp;
+
+    bp_core_new_nav_item(array(
+        'name' => __('Saved Articles', 'buddypress'),
+        'slug' => 'saved-articles',
+        'screen_function' => 'saved_articles_screen',
+        'position' => 50,
+        'default_subnav_slug' => 'saved-articles',
+        'show_for_displayed_user' => true
+    ));
+}
+add_action('bp_setup_nav', 'add_saved_articles_bp_tab', 10);
+
+// Screen function for Saved Articles tab
+function saved_articles_screen()
+{
+    add_action('bp_template_content', 'saved_articles_content');
+    bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
+}
+
+// Content for Saved Articles tab
+function saved_articles_content()
+{
+    $user_id = bp_displayed_user_id();
+    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+
+    if (empty($saved_articles)) {
+        echo '<div class="saved-articles-empty">';
+        echo '<p>' . __('No saved articles yet.', 'buddypress') . '</p>';
+        echo '</div>';
+        return;
+    }
+
+    // Remove any invalid post IDs
+    $saved_articles = array_filter($saved_articles, function ($post_id) {
+        return get_post_status($post_id) === 'publish';
+    });
+
+    if (empty($saved_articles)) {
+        echo '<div class="saved-articles-empty">';
+        echo '<p>' . __('No saved articles yet.', 'buddypress') . '</p>';
+        echo '</div>';
+        return;
+    }
+
+    $args = array(
+        'post_type' => 'post',
+        'post__in' => $saved_articles,
+        'orderby' => 'post__in', // Maintain the order they were saved
+        'posts_per_page' => -1
+    );
+
+    $saved_posts = new WP_Query($args);
+
+    echo '<div class="saved-articles-list">';
+
+    while ($saved_posts->have_posts()) {
+        $saved_posts->the_post();
+    ?>
+        <div class="saved-article-item">
+            <div class="saved-article-image">
+                <?php if (has_post_thumbnail()) : ?>
+                    <a href="<?php the_permalink(); ?>">
+                        <?php the_post_thumbnail('medium'); ?>
+                    </a>
+                <?php else : ?>
+                    <a href="<?php the_permalink(); ?>">
+                        <img src="<?php echo get_template_directory_uri(); ?>/assets/images/default-image.jpg" alt="<?php the_title(); ?>">
+                    </a>
+                <?php endif; ?>
+            </div>
+            <div class="saved-article-content">
+                <h3 class="saved-article-title">
+                    <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                </h3>
+                <div class="saved-article-excerpt">
+                    <?php echo wp_trim_words(get_the_content(), 30, '...'); ?>
+                </div>
+                <div class="saved-article-meta">
+                    <span class="post-date"><?php echo get_the_date(); ?></span>
+                </div>
+            </div>
+        </div>
+    <?php
+    }
+
+    echo '</div>';
+
+    wp_reset_postdata();
+
+    // Add some CSS for the saved articles list
+    ?>
+    <style>
+        .saved-articles-list {
+            display: grid;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .saved-article-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .saved-article-image {
+            flex: 0 0 150px;
+        }
+
+        .saved-article-image img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 0px !important;
+        }
+
+        .saved-article-content {
+            flex: 1;
+        }
+
+        .saved-article-title {
+            margin: 0em 0 !important;
+        }
+
+        .saved-article-title a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        .saved-article-title a:hover {
+            color: #007cba;
+        }
+
+        .saved-article-excerpt {
+            color: #666;
+            margin: 5px 0px;
+            line-height: 1.5;
+        }
+
+        .saved-article-meta {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .saved-articles-empty {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .saved-article-item {
+                flex-direction: column;
+            }
+
+            .saved-article-image {
+                flex: 0 0 auto;
+            }
+        }
+    </style>
+    <?php
+}
+
+// Change comments title
+function replace_comments_title_js()
+{
+    if (is_single() && comments_open()) {
+    ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var commentsTitle = document.querySelector('.comments-title, .comment-reply-title');
+                if (commentsTitle) {
+                    var commentsCount = '<?php echo get_comments_number(); ?>';
+                    commentsTitle.innerHTML = 'Reviews (' + commentsCount + ')';
+                }
+            });
+        </script>
+<?php
+    }
+}
+add_action('wp_footer', 'replace_comments_title_js');

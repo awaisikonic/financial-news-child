@@ -42,7 +42,7 @@
 		return a;
 	}
 
-	var alert$1 = {exports: {}};
+	var alert$2 = {exports: {}};
 
 	var util = {exports: {}};
 
@@ -1062,9 +1062,9 @@
 		  index.defineJQueryPlugin(Alert);
 		  return Alert;
 		});
-	} (alert$1));
+	} (alert$2));
 
-	var alert = alert$1.exports;
+	var alert$1 = alert$2.exports;
 
 	var button$1 = {exports: {}};
 
@@ -6743,26 +6743,26 @@
 	  }
 	})();
 
-	const MenuIcon = document.querySelector('.menu-icon');
-	const MobileNav = document.querySelector('.mobile-nav');
+	const MenuIcon = document.querySelector(".menu-icon");
+	const MobileNav = document.querySelector(".mobile-nav");
 	if (MenuIcon) {
 	  MenuIcon.addEventListener("click", () => {
 	    MobileNav.classList.toggle("mobile-nav-active");
 	  });
 	}
-	const dropdown = document.querySelector('.nav-menu-item-dropdwon');
-	const dropdownMenu = document.querySelector('.desktop-dropdown');
-	dropdown.addEventListener('mouseover', () => {
-	  dropdownMenu.style.display = 'block';
+	const dropdown = document.querySelector(".nav-menu-item-dropdwon");
+	const dropdownMenu = document.querySelector(".desktop-dropdown");
+	dropdown.addEventListener("mouseover", () => {
+	  dropdownMenu.style.display = "block";
 	});
-	dropdown.addEventListener('mouseout', () => {
-	  dropdownMenu.style.display = 'none';
+	dropdown.addEventListener("mouseout", () => {
+	  dropdownMenu.style.display = "none";
 	});
-	dropdownMenu.addEventListener('mouseover', () => {
-	  dropdownMenu.style.display = 'block';
+	dropdownMenu.addEventListener("mouseover", () => {
+	  dropdownMenu.style.display = "block";
 	});
-	dropdownMenu.addEventListener('mouseout', () => {
-	  dropdownMenu.style.display = 'none';
+	dropdownMenu.addEventListener("mouseout", () => {
+	  dropdownMenu.style.display = "none";
 	});
 	document.addEventListener("DOMContentLoaded", function () {
 	  let marketWrapper = document.getElementById("marketDataWrapper");
@@ -6831,12 +6831,12 @@
 	  attachScrollEvents();
 	});
 	document.addEventListener("DOMContentLoaded", function () {
-	  const toggleDropdown = document.getElementById('toggleDropdown');
+	  const toggleDropdown = document.getElementById("toggleDropdown");
 	  const categoryItems = document.querySelectorAll(".future-section__latest-header-catg-item");
 	  const latestNewsContainer = document.getElementById("latest-news-container");
 	  if (toggleDropdown) {
-	    toggleDropdown.addEventListener('click', () => {
-	      document.querySelector('.future-section__latest-header-catg-list').classList.toggle('active');
+	    toggleDropdown.addEventListener("click", () => {
+	      document.querySelector(".future-section__latest-header-catg-list").classList.toggle("active");
 	    });
 	  }
 	  if (categoryItems) {
@@ -6860,13 +6860,13 @@
 	  }
 	});
 	document.addEventListener("DOMContentLoaded", function () {
-	  const toggleDropdown = document.getElementById('toggleDropdownblog');
+	  const toggleDropdown = document.getElementById("toggleDropdownblog");
 	  const categoryItems = document.querySelectorAll(".latest-post__featured-section .future-section__latest-header-catg-item");
 	  const latestNewsContainer = document.getElementById("more-industrie-main");
 	  const paginationContainer = document.querySelector(".pagination"); // Select pagination
 
-	  toggleDropdown.addEventListener('click', () => {
-	    document.querySelector('.latest-post__featured-section .future-section__latest-header-catg-list').classList.toggle('active');
+	  toggleDropdown.addEventListener("click", () => {
+	    document.querySelector(".latest-post__featured-section .future-section__latest-header-catg-list").classList.toggle("active");
 	  });
 	  categoryItems.forEach(item => {
 	    item.addEventListener("click", function () {
@@ -6898,12 +6898,12 @@
 	  const newsContainer = document.getElementById("industrie-news-container");
 	  let displayedPosts = [];
 	  // Select all the .industrie-news-card elements
-	  const newsCard = document.querySelectorAll('.industrie-news-card');
-	  const articleItem = document.querySelectorAll('.bb-article-item');
+	  const newsCard = document.querySelectorAll(".industrie-news-card");
+	  const articleItem = document.querySelectorAll(".bb-article-item");
 	  // Iterate over each card
 	  articleItem.forEach(function (article) {
 	    // Get the post ID from the data-post-id attribute
-	    const postId = article.getAttribute('data-post-id');
+	    const postId = article.getAttribute("data-post-id");
 
 	    // If the post ID exists, add it to the displayedPosts array
 	    if (postId) {
@@ -6913,7 +6913,7 @@
 	  // Iterate over each card
 	  newsCard.forEach(function (news) {
 	    // Get the post ID from the data-post-id attribute
-	    const postId = news.getAttribute('data-post-id');
+	    const postId = news.getAttribute("data-post-id");
 
 	    // If the post ID exists, add it to the displayedPosts array
 	    if (postId) {
@@ -6950,7 +6950,47 @@
 	  }
 	});
 
-	exports.Alert = alert;
+	// bookmark functionality
+	jQuery(document).ready(function ($) {
+	  $(".bookmark-btn").on("click", function (e) {
+	    e.preventDefault();
+	    console.log("Bookmark button clicked");
+	    var $button = $(this);
+	    var post_id = $button.data("post-id");
+	    $.ajax({
+	      url: ajaxurl,
+	      type: "POST",
+	      data: {
+	        action: "toggle_bookmark",
+	        post_id: post_id
+	      },
+	      beforeSend: function () {
+	        $button.prop("disabled", true);
+	      },
+	      success: function (response) {
+	        if (response.success) {
+	          if (response.data.action === "added") {
+	            $button.addClass("bookmarked");
+	            $button.find(".bookmark-text").text("Saved Article");
+	            $button.find(".bookmark-icon").html('<i class="fa-solid fa-bookmark"></i>');
+	          } else {
+	            $button.removeClass("bookmarked");
+	            $button.find(".bookmark-text").text("Bookmark This Article");
+	            $button.find(".bookmark-icon").html('<i class="fa-regular fa-bookmark"></i>');
+	          }
+	        }
+	      },
+	      error: function () {
+	        alert("An error occurred. Please try again.");
+	      },
+	      complete: function () {
+	        $button.prop("disabled", false);
+	      }
+	    });
+	  });
+	});
+
+	exports.Alert = alert$1;
 	exports.Button = button;
 	exports.Carousel = carousel;
 	exports.Collapse = collapse;

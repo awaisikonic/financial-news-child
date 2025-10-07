@@ -17,6 +17,17 @@ $container = get_theme_mod('understrap_container_type');
   <?php
   while (have_posts()) {
     the_post();
+
+    $post_id = get_the_ID();
+    $user_id = get_current_user_id();
+    $saved_articles = get_user_meta($user_id, 'saved_articles', true);
+    $saved_articles = !empty($saved_articles) ? $saved_articles : array();
+
+    $is_bookmarked = in_array($post_id, $saved_articles);
+    $button_class = $is_bookmarked ? 'bookmark-btn bookmarked' : 'bookmark-btn';
+    $button_text = $is_bookmarked ? 'Saved Article' : 'Bookmark This Article';
+    $bookmark_icon = $is_bookmarked ? '<i class="fa-solid fa-bookmark"></i>' : '<i class="fa-regular fa-bookmark"></i>';
+
     $article_summary = get_field('article_summary');
     $why_it_matters = get_field('why_it_matters');
     $sentiment_analysis_indicator = get_field('sentiment_analysis_indicator');
@@ -78,12 +89,20 @@ $container = get_theme_mod('understrap_container_type');
         </div>
 
         <div class="article-heading-right">
-          <?php if (!empty($sentiment_analysis_indicator)) { ?>
-            <div class="sai-tag-wrap">
-              <h3>Sentiment Analysis</h3>
-              <span class="sai-tag <?php echo $tag_class; ?>"><?php echo $sentiment_analysis_indicator; ?></span>
-            </div>
-          <?php } ?>
+          <div class="bookmark-wrap">
+            <?php if (!empty($sentiment_analysis_indicator)) { ?>
+              <div class="sai-tag-wrap">
+                <h3>Sentiment Analysis</h3>
+                <span class="sai-tag <?php echo $tag_class; ?>"><?php echo $sentiment_analysis_indicator; ?></span>
+              </div>
+            <?php } ?>
+            <?php if (is_user_logged_in()) { ?>
+              <button class="<?php echo $button_class; ?>" data-post-id="<?php echo $post_id; ?>">
+                <span class="bookmark-icon"><?php echo $bookmark_icon; ?></span>
+                <span class="bookmark-text"><?php echo $button_text; ?></span>
+              </button>
+            <?php } ?>
+          </div>
           <?php the_title('<h1 class="entry-title">', '</h1>'); ?>
           <?php if (has_post_thumbnail()) : ?>
             <div class="article-heading-img">
@@ -96,7 +115,12 @@ $container = get_theme_mod('understrap_container_type');
     </div>
     <div class="article-grid main-content-with-audio">
       <div class="article-grid-inner-grid main-content-with-audio">
-        <div></div>
+        <div class="article-heading-left poll-section">
+          <?php if (function_exists('vote_poll')): ?>
+            <h3>Polls</h3>
+            <?php get_poll(); ?>
+          <?php endif; ?>
+        </div>
         <div class="artical-main-content">
           <?php
           $post_temp_content = get_field('post_temp_content', get_the_ID());
@@ -134,6 +158,16 @@ $container = get_theme_mod('understrap_container_type');
   }
   ?>
 </section>
+<?php if (is_user_logged_in()) { ?>
+  <section class="comments-section">
+    <?php
+    // Display comments template
+    if (comments_open() || get_comments_number()) {
+      comments_template();
+    }
+    ?>
+  </section>
+<?php } ?>
 <section class="related-articles">
 
   <div class="top-reads covered-by">
@@ -271,5 +305,6 @@ $container = get_theme_mod('understrap_container_type');
     margin: 50px 0 20px;
   }
 </style>
+
 <?php
 get_footer();

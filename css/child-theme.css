@@ -18013,6 +18013,43 @@ a {
   margin-top: 0px !important;
 }
 
+.mc4wp-form-fields input[type=email] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.mc4wp-form-fields input[type=email]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.mc4wp-form-fields input[type=submit] {
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 10px;
+}
+
+.mc4wp-form-fields input[type=submit]:hover {
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.newsletter-desc {
+  color: #fff;
+}
+
 .main-content-with-audio-right {
   position: relative;
   position: relative;

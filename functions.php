@@ -581,13 +581,65 @@ function gpt_rewrite_custom_field()
     $news_coverage_comparison = gpt_extract_keywords($title, $openai_key);
     update_post_meta($post_id, '_article_keywords', $news_coverage_comparison);
 
+    // Step 3: Generate SEO data
+    $seo_data = gpt_generate_seo_data($title, $rewritten_response, $openai_key);
+
     wp_send_json_success([
         'rewritten_content' => $rewritten_with_images,
         'fact_check_result' => $fact_check_result,
-        'news_coverage_comparison' => $news_coverage_comparison,
+        'seo_data' => $seo_data
     ]);
 }
 add_action('wp_ajax_gpt_rewrite_custom_field', 'gpt_rewrite_custom_field');
+
+/**
+ * Generate focus keyphrase and meta description using GPT
+ */
+function gpt_generate_seo_data($title, $rewritten_content, $api_key)
+{
+    $seo_prompt = "Based on the following article title and content, generate:\n\n1. A focus keyphrase (main keyword phrase, 2-4 words max)\n2. A compelling meta description (under 160 characters)\n\nFormat your response exactly as:\nKEYPHRASE: [the keyphrase here]\nDESCRIPTION: [the meta description here]\n\nTitle: {$title}\n\nContent: " . wp_trim_words($rewritten_content, 100);
+
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type'  => 'application/json',
+        ],
+        'body' => json_encode([
+            'model' => 'gpt-4',
+            'messages' => [
+                ['role' => 'system', 'content' => 'You are an SEO expert. Generate precise focus keyphrases and compelling meta descriptions.'],
+                ['role' => 'user', 'content' => $seo_prompt],
+            ],
+            'max_tokens' => 150,
+            'temperature' => 0.7,
+        ]),
+        'timeout' => 30,
+    ]);
+
+    if (is_wp_error($response)) {
+        return ['keyphrase' => '', 'description' => ''];
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    $content = isset($body['choices'][0]['message']['content']) ? $body['choices'][0]['message']['content'] : '';
+
+    // Parse the response
+    $keyphrase = '';
+    $description = '';
+
+    if (preg_match('/KEYPHRASE:\s*(.+)/i', $content, $keyphrase_match)) {
+        $keyphrase = trim($keyphrase_match[1]);
+    }
+
+    if (preg_match('/DESCRIPTION:\s*(.+)/i', $content, $desc_match)) {
+        $description = trim($desc_match[1]);
+    }
+
+    return [
+        'keyphrase' => $keyphrase,
+        'description' => $description
+    ];
+}
 
 
 /**

@@ -77,9 +77,8 @@ jQuery(document).ready(function ($) {
         if (response.success) {
           const rewritten = response.data.rewritten_content;
           const factCheck = response.data.fact_check_result || "";
-          const newsCoverageComparison =
-            response.data.news_coverage_comparison || "";
-          console.log("News Coverage Comparison:", newsCoverageComparison);
+          const seoData = response.data.seo_data || {};
+          //console.log("Seo data", { seoData });
 
           // Check for fact-check result
           const lowerCaseFact = factCheck.toLowerCase();
@@ -104,6 +103,93 @@ jQuery(document).ready(function ($) {
           $("#content").val(rewritten);
           hasGeneratedContent = true;
           toggleSecondaryButtons(true);
+
+          // Update Yoast SEO fields in the DOM
+          if (seoData.keyphrase) {
+            const keyphraseInput = document.getElementById(
+              "focus-keyword-input-metabox"
+            );
+            if (keyphraseInput) {
+              keyphraseInput.value = seoData.keyphrase;
+              // Trigger change event for Yoast to detect the update
+              const event = new Event("input", { bubbles: true });
+              keyphraseInput.dispatchEvent(event);
+            }
+
+            const hiddenKeyphrase = document.getElementById(
+              "yoast_wpseo_focuskw"
+            );
+            if (hiddenKeyphrase) {
+              hiddenKeyphrase.value = seoData.keyphrase;
+              const changeEvent = new Event("change", { bubbles: true });
+              hiddenKeyphrase.dispatchEvent(changeEvent);
+            }
+          }
+
+          if (seoData.description) {
+            const descEditor = document.getElementById(
+              "yoast-google-preview-description-metabox"
+            );
+            if (descEditor) {
+              // Clear existing content
+              descEditor.innerHTML = "";
+
+              // Create new text node with the description
+              const textNode = document.createTextNode(seoData.description);
+              const span = document.createElement("span");
+              span.setAttribute("data-text", "true");
+              span.appendChild(textNode);
+
+              const div = document.createElement("div");
+              div.setAttribute("class", "");
+              div.setAttribute("data-block", "true");
+              div.setAttribute("data-editor", "49h4k");
+              div.setAttribute("data-offset-key", "1tijm-0-0");
+
+              const innerDiv = document.createElement("div");
+              innerDiv.setAttribute("data-offset-key", "1tijm-0-0");
+              innerDiv.setAttribute(
+                "class",
+                "public-DraftStyleDefault-block public-DraftStyleDefault-ltr"
+              );
+
+              innerDiv.appendChild(span);
+              div.appendChild(innerDiv);
+
+              const contentDiv = descEditor.querySelector(
+                '[data-contents="true"]'
+              );
+              if (contentDiv) {
+                contentDiv.innerHTML = "";
+                contentDiv.appendChild(div);
+              } else {
+                descEditor.appendChild(div);
+              }
+
+              // Trigger input event for Yoast
+              const event = new Event("input", { bubbles: true });
+              descEditor.dispatchEvent(event);
+            }
+
+            const hiddenMetaDesc = document.getElementById(
+              "yoast_wpseo_metadesc"
+            );
+            if (hiddenMetaDesc) {
+              hiddenMetaDesc.value = seoData.description;
+              const changeEvent = new Event("change", { bubbles: true });
+              hiddenMetaDesc.dispatchEvent(changeEvent);
+            }
+          }
+
+          // Show success message with SEO updates
+          let successMessage = "Content rewritten successfully!";
+          if (seoData.keyphrase || seoData.description) {
+            successMessage += "\n\nSEO fields updated:";
+            if (seoData.keyphrase)
+              successMessage += `\n• Focus Keyphrase: ${seoData.keyphrase}`;
+            if (seoData.description)
+              successMessage += `\n• Meta Description: ${seoData.description}`;
+          }
 
           // Alert if fact check flags any issue
           if (!isAccurate) {
